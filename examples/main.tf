@@ -1,5 +1,5 @@
 module "Cluster" {
-  source        = "tf-module-aws-eks/"
+  source        = "../"
   ami_id        = "ami-01e08d22b9439c15a"
   vpc_id        = "vpc-49fb682f"
   subnets_id    = ["subnet-8d79a2eb", "subnet-938b23db", "subnet-ecfc19b6"]
