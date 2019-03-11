@@ -6,7 +6,7 @@ Creating EKS Cluster via Terraform on AWS, followed by setting and deploying of 
 
 ### Includes modules
  * terraform-aws-modules/eks/aws
- * AS_policys
+ * github.com/lean-delivery/tf-module-aws-scaling-policy
 
 The module allows you to deploy an EKS cluster in AWS. Automatically will be created:
 
@@ -18,7 +18,7 @@ The module allows you to deploy an EKS cluster in AWS. Automatically will be cre
  * Instances
 
 The cluster automatically uses spot-instances if you set spot_price.
-Module uses [terraform-aws-eks](https://github.com/terraform-aws-modules/terraform-aws-eks) from [Terraform AWS modules](https://github.com/terraform-aws-modules) (No-Verified module), and adds aws_autoscaling_policy for scaling ASG.
+Module uses [terraform-aws-eks](https://github.com/terraform-aws-modules/terraform-aws-eks) from [Terraform AWS modules](https://github.com/terraform-aws-modules) (No-Verified module), and adds [aws_autoscaling_policy](https://github.com/lean-delivery/tf-module-aws-scaling-policy) for scaling ASG.
 
 
 

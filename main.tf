@@ -45,7 +45,7 @@ module "Cluster" {
 }
 
 module "AS_Polisys" {
-  source                     = "AS_policys/"
+  source                     = "github.com/lean-delivery/tf-module-aws-scaling-policy/"
   autoscaling_group_name     = "${element(module.Cluster.workers_asg_names, 0)}"
   policy_name                = "${var.project}-${var.environment}"
   SimpleScaling_policys      = "${var.SimpleScaling_policys}"
