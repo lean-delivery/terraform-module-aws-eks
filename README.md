@@ -104,6 +104,7 @@ Use specified AMI for parameter ami_id
 | subnets_id | A list of subnets to place the EKS cluster and workers within | list | n/a | yes |
 | project | Project name is used to identify resources | string | test | no |
 | environment | Environment name is used to identify resources | string | env | no |
+| cluster_name | Cluster name | string | "" | no |
 | ami_id | AMI ID for the eks workers. Look AMI-s table | string | n/a | yes |
 | asg_desired_capacity | Desired worker capacity in the autoscaling group. | string | 1 | no |
 | asg_min_size | Minimum worker capacity in the autoscaling group. | string | 1 | no |

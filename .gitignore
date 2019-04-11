@@ -4,6 +4,10 @@ terraform.tfstate
 terraform.tfvars
 *.tfstate*
 
+examples/.terraform
+examples/terraform.tfstate
+examples/terraform.tfvars
+
 # OS X files
 .history
 .DS_Store

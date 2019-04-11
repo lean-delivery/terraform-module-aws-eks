@@ -8,7 +8,7 @@ locals {
 
 module "Cluster" {
   source       = "terraform-aws-modules/eks/aws"
-  cluster_name = "${var.project}-${var.environment}"
+  cluster_name = "${ var.cluster_name != "" ? var.cluster_name : "${var.project}-${var.environment}" }"
   vpc_id       = "${var.vpc_id}"
   subnets      = "${var.subnets_id}"
 
@@ -45,7 +45,7 @@ module "Cluster" {
 }
 
 module "AS_Polisys" {
-  source                     = "github.com/lean-delivery/tf-module-aws-scaling-policy/"
+  source                     = "github.com/lean-delivery/tf-module-aws-scaling-policy"
   autoscaling_group_name     = "${element(module.Cluster.workers_asg_names, 0)}"
   policy_name                = "${var.project}-${var.environment}"
   SimpleScaling_policys      = "${var.SimpleScaling_policys}"

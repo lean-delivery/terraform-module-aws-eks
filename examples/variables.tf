@@ -1,13 +1,17 @@
-variable "project" {
-  description = "Project name is used to identify resources"
-  type        = "string"
-  default     = "test"
+variable "region" {
+  default = "eu-west-1"
 }
 
 variable "cluster_name" {
   description = "Cluster name"
   type        = "string"
   default     = ""
+}
+
+variable "project" {
+  description = "Project name is used to identify resources"
+  type        = "string"
+  default     = "test"
 }
 
 variable "environment" {
