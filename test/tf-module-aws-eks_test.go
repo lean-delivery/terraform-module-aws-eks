@@ -12,7 +12,6 @@ import (
 var terraformDirectory = "../examples"
 var region             = "us-east-1"
 var account            = ""
-var region             = "eu-west-1"
 var vpc_id             = "vpc-49fb682f"
 var subnets_id         = []string{"subnet-8d79a2eb", "subnet-938b23db", "subnet-ecfc19b6"}
 
@@ -24,7 +23,7 @@ func Test(t *testing.T) {
 
 		Vars: map[string]interface{}{
 			"aws_region": region,
-			"name": "Test_EKS_name_" + randSeq(10)
+			"cluster_name": "Test_EKS_name_" + randSeq(10),
 			"vpc_id": vpc_id,
 			"subnets_id": subnets_id,
 			"ami_id": "ami-01e08d22b9439c15a",

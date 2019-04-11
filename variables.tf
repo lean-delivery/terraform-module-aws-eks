@@ -4,6 +4,12 @@ variable "project" {
   default     = "test"
 }
 
+variable "cluster_name" {
+  description = "Cluster name"
+  type        = "string"
+  default     = ""
+}
+
 variable "environment" {
   description = "Environment name is used to identify resources"
   type        = "string"

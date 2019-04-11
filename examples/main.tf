@@ -2,8 +2,11 @@ provider "aws" {
   region = "${var.region}"
 }
 
+data "aws_caller_identity" "current" {}
+
 module "Cluster" {
   source                        = "../"
+  cluster_name                  = "${var.cluster_name}"
   project                       = "${var.project}"
   environment                   = "${var.environment}"
   vpc_id                        = "${var.vpc_id}"
