@@ -5,8 +5,8 @@
 Creating EKS Cluster via Terraform on AWS, followed by setting and deploying of applications on kubernetes-cluster
 
 ### Includes modules
- * terraform-aws-modules/eks/aws
- * AS_policys
+ * [terraform-aws-modules/eks/aws](https://github.com/terraform-aws-modules/terraform-aws-eks)
+ * [tf-module-aws-scaling-policy](https://github.com/lean-delivery/tf-module-aws-scaling-policy)
 
 The module allows you to deploy an EKS cluster in AWS. Automatically will be created:
 
