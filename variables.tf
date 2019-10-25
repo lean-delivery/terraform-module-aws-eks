@@ -1,171 +1,213 @@
 variable "project" {
   description = "Project name is used to identify resources"
   type        = "string"
-  default     = "test"
 }
 
 variable "environment" {
   description = "Environment name is used to identify resources"
   type        = "string"
-  default     = "env"
 }
 
-variable "vpc_id" {
-  description = "VPC where the cluster and workers will be deployed"
+variable "root_domain" {
+  description = "Root domain in which custom DNS record for ALB would be created"
+}
+
+variable "alternative_domains_count" {
+  description = "Alternative domains count for ACM certificate"
+  default     = "0"
+}
+
+variable "alternative_domains" {
+  description = "Alternative domains for ACM certificate dns records with ',' as delimiter"
+  default     = []
+}
+
+variable "alb_route53_record" {
+  description = "Alias Route53 DNS record name for ALB"
+}
+
+variable "alb_ingress_rules" {
+  description = "List of maps that contains ingress rules for ALB security group"
+  type        = "list"
+  default     = [
+    {
+      from_port = 80,
+      to_port = 80,
+      protocol = "tcp",
+      cidr_blocks = "0.0.0.0/0"
+    },
+    {
+      from_port = 443,
+      to_port = 443,
+      protocol = "tcp",
+      cidr_blocks = "0.0.0.0/0"
+    }
+  ]
+}
+
+variable "cidr_whitelist" {
+  description = "List of maps that contains IP CIDR with protocol type. Example provided in module examples"
+  default     = []
+}
+
+variable "enable_waf" {
+  description = "Set true to enable Web Application Firewall for whitelisting"
+  default = false
+}
+
+variable "create_acm_certificate" {
+  description = "Set true for ACM certificate for ALB creation"
+  default = true
+}
+
+variable "target_group_port" {
+  description = "ALB targer group port. This value will be used as NodePort for Nginx Ingress controller service."
   type        = "string"
+  default     = "30080"
 }
 
-variable "subnets_id" {
-  description = "A list of subnets to place the EKS cluster and workers within"
+variable "local_exec_interpreter" {
+  description = "Command to run for local-exec resources. Must be a shell-style interpreter. If you are on Windows Git Bash is a good choice."
+  type        = "list"
+  default     = ["/bin/sh", "-c"]
+}
+
+variable "cluster_version" {
+  description = "Kubernetes version to use for the EKS cluster."
+  default     = "1.14"
+}
+
+variable "cluster_enabled_log_types" {
+  default     = []
+  description = "A list of the desired control plane logging to enable. For more information, see Amazon EKS Control Plane Logging documentation (https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html)"
   type        = "list"
 }
 
-variable "ami_id" {
-  description = "AMI ID for the eks workers."
-  type        = "string"
+variable "map_roles" {
+  description = "Additional IAM roles to add to the aws-auth configmap. See examples/eks_test_fixture/variables.tf for example format."
+  type        = "list"
+  default     = []
 }
 
-variable "asg_desired_capacity" {
-  description = "Desired worker capacity in the autoscaling group."
-  type        = "string"
-  default     = "1"
-}
-
-variable "asg_min_size" {
-  description = "Minimum worker capacity in the autoscaling group."
-  type        = "string"
-  default     = "1"
-}
-
-variable "placement_tenancy" {
-  description = "The tenancy of the instance. Valid values are default or dedicated."
-  type        = "string"
-  default     = ""
-}
-
-variable "root_volume_size" {
-  description = "root volume size of workers instances."
-  type        = "string"
-  default     = "100"
-}
-
-variable "root_volume_type" {
-  description = "root volume type of workers instances can be standard gp2 or io1"
-  type        = "string"
-  default     = "gp2"
-}
-
-variable "root_iops" {
-  description = "The amount of provisioned IOPS. This must be set with a volume_type of io1."
+variable "map_roles_count" {
+  description = "The count of roles in the map_roles list."
   type        = "string"
   default     = "0"
 }
 
-variable "key_name" {
-  description = "The key name that should be used for the instances in the autoscaling group"
+variable "vpc_id" {
+  description = "VPC ID for cluster provisioning"
+  type        = "string"
+}
+
+variable "private_subnets" {
+  description = "List of private subnets for cluster worker nodes provisioning"
+  type        = "list"
+}
+
+variable "public_subnets" {
+  description = "List of public subnets for ALB provisioning"
+  type        = "list"
+}
+
+#########################WORKER_NODES#########################
+variable "volume_size" {
+  description = "Volume size(GB) for worker node in cluster"
+  type        = "string"
+  default     = "50"
+}
+
+variable "worker_nodes_ssh_key" {
+  description = "If Public ssh key provided, will be used for ssh access to worker nodes. Otherwise instances will be created without ssh key."
   type        = "string"
   default     = ""
 }
 
-variable "pre_userdata" {
-  description = "userdata to pre-append to the default userdata."
+variable "spot_configuration" {
+  description = "List of maps that contains configurations for ASGs with spot workers instances what will be used in EKS-cluster"
+  type        = "list"
+  default     = [
+    {
+      instance_type = "m4.large",
+      spot_price    = "0.05",
+      asg_max_size  = "4",
+      asg_min_size  = "1",
+      asg_desired_capacity = "1",
+      additional_kubelet_args = ""
+    },
+    {
+      instance_type = "m4.xlarge",
+      spot_price    = "0.08",
+      asg_max_size  = "4",
+      asg_min_size  = "0",
+      asg_desired_capacity = "0",
+      additional_kubelet_args = ""
+    }
+  ]
+}
+
+variable "on_demand_configuration" {
+  description = "List of maps that contains configurations for ASGs with on-demand workers instances what will be used in EKS-cluster"
+  type        = "list"
+  default     = [
+    {
+      instance_type = "m4.xlarge",
+      asg_max_size  = "6",
+      asg_min_size  = "0",
+      asg_desired_capacity = "0",
+      additional_kubelet_args = ""
+    }
+  ]
+}
+
+variable "service_on_demand_configuration" {
+  description = "List of maps that contains configurations for ASGs with on-demand workers instances what will be used in EKS-cluster"
+  type        = "list"
+  default     = [
+    {
+      instance_type = "t3.small",
+      asg_max_size  = "1",
+      asg_min_size  = "1",
+      asg_desired_capacity = "1",
+      additional_kubelet_args = ""
+    }
+  ]
+}
+
+#########################DEPLOYMENTS FOR EKS CLUSTER#########################
+
+variable "deploy_ingress_controller" {
+  description = "Set true for nginx ingress controller installation (https://github.com/kubernetes/ingress-nginx#nginx-ingress-controller)"
   type        = "string"
-  default     = ""
+  default     = "true"
 }
 
-variable "additional_userdata" {
-  description = "userdata to append to the default userdata."
+variable "deploy_external_dns" {
+  description = "Set true for External DNS installation (https://github.com/kubernetes-incubator/external-dns#externaldns)"
   type        = "string"
-  default     = ""
+  default     = "false"
 }
 
-variable "ebs_optimized" {
-  description = "sets whether to use ebs optimization on supported types."
-  default     = true
-}
-
-variable "enable_monitoring" {
-  description = "Enables/disables detailed monitoring."
-  default     = true
-}
-
-variable "public_ip" {
-  description = "Associate a public ip address with a worker"
-  default     = false
-}
-
-variable "kubelet_extra_args" {
-  description = "This string is passed directly to kubelet if set. Useful for adding labels or taints."
+variable "enable_container_logs" {
+  description = "Set true to install fluentd and store container logs in AWS CloudWatch log group (https://github.com/helm/charts/tree/master/incubator/fluentd-cloudwatch#fluentd-cloudwatch)"
   type        = "string"
-  default     = ""
+  default     = "false"
 }
 
-variable "autoscaling_enabled" {
-  description = "Sets whether policy and matching tags will be added to allow autoscaling."
-  default     = true
-}
-
-variable "additional_security_group_ids" {
-  description = "A comma delimited list of additional security group ids to include in worker launch config"
-  type        = "string"
-  default     = ""
-}
-
-variable "protect_from_scale_in" {
-  description = "Prevent AWS from scaling in, so that cluster-autoscaler is solely responsible."
-  default     = false
-}
-
-variable "suspended_processes" {
-  description = "A comma delimited string of processes to to suspend. i.e. AZRebalance HealthCheck ReplaceUnhealthy"
-  type        = "string"
-  default     = ""
-}
-
-variable "target_group_arns" {
-  description = "A comma delimited list of ALB target group ARNs to be associated to the ASG"
-  type        = "string"
-  default     = ""
-}
-
-variable "instance_type" {
-  description = "Size of the workers instances what will be used in EKS-cluster"
-  type        = "string"
-  default     = "m4.large"
-}
-
-variable "asg_max_size" {
-  description = "Maximum worker capacity in in cluster"
+variable "container_logs_retention_days" {
+  description = "Set retention period for AWS CloudWatch log group with container logs"
   type        = "string"
   default     = "5"
 }
 
-variable "spot_price" {
-  description = "Cost of spot instance. Value 1 equals one dollar. 0.01 equals one cent. Set this variable if you want run cluster on spot instances"
+variable "enable_monitoring" {
+  description = "Set true for prometheus-operator (https://github.com/helm/charts/tree/master/stable/prometheus-operator#prometheus-operator) and grafana (https://github.com/helm/charts/tree/master/stable/grafana#grafana-helm-chart) deployment. Also storageClass will be created."
   type        = "string"
-  default     = "0.1"
+  default     = "false"
 }
 
-variable "SimpleScaling_policys" {
-  description = "A list of AS-policys. Trigger for scaling ASG. Only policy_type SimpleScaling"
-  type        = "list"
-  default     = []
-}
-
-variable "SimpleAlarmScaling_policys" {
-  description = "A list of AS-policys. Trigger for scaling ASG. Only policy_type SimpleScaling"
-  type        = "list"
-  default     = []
-}
-
-variable "StepScaling_policys" {
-  description = "A list of AS-policys. Trigger for scaling ASG. Only policy_type StepScaling"
-  type        = "list"
-  default     = []
-}
-
-variable "TargetTracking_policys" {
-  description = "A list of AS-policys. Trigger for scaling ASG. Only policy_type TargetTrackingScaling"
-  type        = "list"
-  default     = []
+variable "monitoring_availability_zone" {
+  description = "Availability zone in which will be deployed grafana and prometheus-operator, as this deployments required persistent volumes for data storing. If variable not set - availability zone of first subnet in private_subnets array will be used."
+  type        = "string"
+  default     = ""
 }

@@ -1,187 +1,233 @@
-# Terraform EKS module
 
-## Description
+# EKS terraform module
 
-Creating EKS Cluster via Terraform on AWS, followed by setting and deploying of applications on kubernetes-cluster
+Module provisions scalable EKS cluster with EC2 spot instances as worker nodes.
+By defaut terraform code will provision EKS cluster, IAM roles for worker nodes and cluster, additional IAM policies, security groups, instance profile, autoscaling groups and launch configurations for spot and on-demand worker nodes (autoscaling groups will be created per AZ for each launch configuration), ALB, Route53 record for ALB, target group. Also module will deploy [cluster-autoscaler](https://github.com/kubernetes/autoscaler/tree/cluster-autoscaler-1.16.1/cluster-autoscaler), [spot termination handler](https://github.com/banzaicloud/banzai-charts/tree/master/spot-termination-handler), [tiller](https://helm.sh/docs/glossary/#tiller),  [metric server](https://github.com/helm/charts/tree/master/stable/metrics-server#metrics-server) and [nginx-ingress-controller](https://github.com/kubernetes/ingress-nginx#nginx-ingress-controller).
 
-### Includes modules
- * [terraform-aws-modules/eks/aws](https://github.com/terraform-aws-modules/terraform-aws-eks)
- * [tf-module-aws-scaling-policy](https://github.com/lean-delivery/tf-module-aws-scaling-policy)
+## Deployment diagram:
 
-The module allows you to deploy an EKS cluster in AWS. Automatically will be created:
+![deployment](module/draw.io/eks_infra.png)
 
- * IAM-Policys
- * Iam-Roles
- * AutoScaling-group
- * Security-Groups
- * EKS-cluster
- * Instances
+## Default EKS deployments:
 
-The cluster automatically uses spot-instances if you set spot_price.
-Module uses [terraform-aws-eks](https://github.com/terraform-aws-modules/terraform-aws-eks) from [Terraform AWS modules](https://github.com/terraform-aws-modules) (No-Verified module), and adds aws_autoscaling_policy for scaling ASG.
+![deployment](module/draw.io/default_deployments.png)
+
+Optionally following features can be enabled:
+ * ACM certificate for ALB;
+ * AWS WAF for whitelisting;
+ * deploy [fluend](https://github.com/helm/charts/tree/master/incubator/fluentd-cloudwatch#fluentd-cloudwatch) for container logs aggregation. Logs will be stored in AWS CloudWatch logs group:
+
+   ![fluentd](module/draw.io/fluentd.png)
+ * deploy [external-dns](https://github.com/kubernetes-incubator/external-dns#externaldns) service:
+
+   ![externalDNS](module/draw.io/externalDNS.png)
+ * deploy [prometheus-operator](https://github.com/coreos/prometheus-operator#prometheus-operator) with [Grafana](https://github.com/helm/charts/tree/master/stable/grafana#grafana-helm-chart):
+   ![monitoring](module/draw.io/monitoring.png)
 
 
 
-## Requirements:
-### For creating cluster (module eks-orchestration)
-* vpc_id
-* subnets_id
+## Requirements
 
-### For creating metrics (autoscaling policy and cloudwatch metric alarm. Module AS_policys)
-* autoscaling group name (Can take from eks-orchestration)
-* lists of scaling policys (4 types: SimpleScaling_policys, SimpleAlarmScaling_policys, StepScaling_policys, TargetTracking_policys)
+Folloving resources shoud be created before cluster provisioning:
+ * AWS VPC - https://docs.aws.amazon.com/eks/latest/userguide/network_reqs.html
+ * AWS Route53 HostedZone
 
-### Also you need to have
-* awscli
-* kubectl (For further management of the cluster)
+ | Tool       | Version   |
+ | ---------- | --------- |
+ | terraform  | ==0.11.14  |
+ | kubectl    | >=1.13.4   |
+ | helm       | ==2.13.1   |
+ | aws-cli    | ==1.16.140  |
+ | aws-iam-authenticator   |  ==1.12.7  |
 
-## Usage
+## NOTES
+ * rendered manifests and Helm charts for Kubernetes will be available in ${path.root}/manifests_rendered. Store it for further edition if required.
 
-```hcl
-module "Cluster" {
-  source                 = "eks-orchestration/"
-  vpc_id                 = "vpc-XXXXXXXX"
-  subnets_id             = ["subnet-XXXXXXXX","subnet-XXXXXXXX","subnet-XXXXXXXX"]
-  instance_type          = "m4.large"
-  asg_max_size           = "10"
-  spot_price             = "0.05"
-  ami_id                 = "ami-0c2e8d28b1f854c68"
+## Module usage example
+
+```HCL
+provider "aws" {
+  region  = "us-east-1"
 }
 
-module "AS_Polisys" {
-  source = "AS_policys/"
-  autoscaling_group_name = "${element(module.Cluster.workers_asg_names, 0)}"
+module "core" {
+  source = "github.com/lean-delivery/tf-module-aws-core?ref=v0.2"
 
-  SimpleScaling_policys = [
+  project            = "eks"
+  environment        = "test"
+  availability_zones = ["us-east-1b","us-east-1c"]
+  vpc_cidr           = "10.12.0.0/21"
+  private_subnets    = ["10.12.0.0/24","10.12.1.0/24"]
+  public_subnets     = ["10.12.2.0/24","10.12.3.0/24"]
+
+  enable_nat_gateway = "true"
+}
+
+module "eks_test" {
+  source = "./module"
+
+  project      = "eks"
+  environment  = "test"
+
+  cluster_version = "1.14"
+  cluster_enabled_log_types = ["api"]
+
+  vpc_id          = "${module.core.vpc_id}"
+  private_subnets = "${module.core.private_subnets}"
+  public_subnets  = "${module.core.public_subnets}"
+
+  spot_configuration = [
+      {
+        instance_type = "m4.large",
+        spot_price    = "0.05",
+        asg_max_size  = "4",
+        asg_min_size  = "0",
+        asg_desired_capacity = "0",
+        additional_kubelet_args = ""
+      },
+      {
+        instance_type = "m4.xlarge",
+        spot_price    = "0.08",
+        asg_max_size  = "4",
+        asg_min_size  = "1",
+        asg_desired_capacity = "1",
+        additional_kubelet_args = ""
+      },
+      {
+        instance_type = "m4.2xlarge",
+        spot_price    = "0.15",
+        asg_max_size  = "4",
+        asg_min_size  = "0",
+        asg_desired_capacity = "0",
+        additional_kubelet_args = ""
+      }
+    ]
+
+
+  on_demand_configuration = [
+      {
+        instance_type = "m4.xlarge",
+        asg_max_size  = "6",
+        asg_min_size  = "0",
+        asg_desired_capacity = "0",
+        additional_kubelet_args = ""
+      }
+    ]
+
+  service_on_demand_configuration = [
+      {
+        instance_type = "t3.small",
+        asg_max_size  = "1",
+        asg_min_size  = "1",
+        asg_desired_capacity = "1",
+        additional_kubelet_args = ""
+      }
+    ]
+
+  worker_nodes_ssh_key      = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDmYWeU1Hm+KfNmnOhB1OVh58KVcetUp6URTPB6fEOmIoNpXXpwFNeotjPoyFwwNc6KJ3LtDOo/Gx9SBkx9sSrHZcJVrKXRF/h4fe4nWeuoz0l3e8Toq+UajIXPjtv+mXkUX5LeyWKwInGc9U3BHXhzV8BYz9i1UqPDDvNsmep5gdRukI327Rh1G+kAYuhivvxbrzsIQrLUMjHqTiL25yILHZJ/eCJvcqLBXtxkPJThytVC1WUZ4vKQ5g8Ley6CtEa/7HolH6RlGduHswzqcdjrSMNxXPoSLF0j4cOeRy7MQA3TU4cLBgcmrwGgE5/IjBy3/3e15D3jtu8jX0r+tUR3 user@example.com"
+  enable_waf                = true
+  create_acm_certificate    = true
+  root_domain               = "eks.example.com"
+  alb_route53_record        = "eks-test.eks.example.com"
+  alternative_domains       = ["*.eks.example.com"]
+  alternative_domains_count = 1
+  target_group_port         = "30081"
+  cidr_whitelist = [
     {
-      estimated_instance_warmup = ""
-      adjustment_type           = "ChangeInCapacity"
-      policy_type               = "SimpleScaling"
-      cooldown                  = "300"
-      scaling_adjustment        = "0"
+      type  = "IPV4"
+      value = "194.0.0.0/29"
     },
-  ]
+    {
+      type  = "IPV4"
+      value = "213.0.0.0/24"
+    },
+    ]
+
+  deploy_ingress_controller       = true
+  deploy_external_dns             = true
+  enable_container_logs           = true
+  container_logs_retention_days   = "5"
+  enable_monitoring               = true
+  monitoring_availability_zone    = "us-east-1c"
 }
 ```
-
-## Table AMI
-Use specified AMI for parameter ami_id
-
-### Kubernetes version 1.11
-| Region | Region ID | Amazon EKS-optimized AMI | with GPU support |
-|--------|-----------|--------------------------|------------------|
-| US West (Oregon) | us-west-2 | ami-0a2abab4107669c1b | ami-0c9e5e2d8caa9fb5e |
-| US East (N. Virginia) | us-east-1 | ami-0c24db5df6badc35a | ami-0ff0241c02b279f50 |
-| US East (Ohio) | us-east-2 | ami-0c2e8d28b1f854c68 | ami-006a12f54eaafc2b1 |
-| EU (Frankfurt) | eu-central-1 | ami-010caa98bae9a09e2 | ami-0d6f0554fd4743a9d |
-| EU (Stockholm) | eu-north-1 | ami-06ee67302ab7cf838 | ami-0b159b75 |
-| EU (Ireland) | eu-west-1 | ami-01e08d22b9439c15a | ami-097978e7acde1fd7c |
-| Asia Pacific (Tokyo) | ap-northeast-1 | ami-0f0e8066383e7a2cb | ami-036b3969c5eb8d3cf |
-| Asia Pacific (Seoul) | ap-northeast-2 | ami-0b7baa90de70f683f | ami-0b7f163f7194396f7 |
-| Asia Pacific (Singapore) | ap-southeast-1 | ami-019966ed970c18502 | ami-093f742654a955ee6 |
-| Asia Pacific (Sydney) | ap-southeast-2 | ami-06ade0abbd8eca425 | ami-05e09575123ff498b |
-
-### Kubernetes version 1.10
-| Region | Region ID | Amazon EKS-optimized AMI | with GPU support |
-|--------|-----------|--------------------------|------------------|
-| US West (Oregon) | us-west-2 | ami-09e1df3bad220af0b | ami-0ebf0561e61a2be02 |
-| US East (N. Virginia) | us-east-1 | ami-04358410d28eaab63 | ami-0131c0ca222183def |
-| US East (Ohio) | us-east-2 | ami-0b779e8ab57655b4b | ami-0abfb3be33c196cbf |
-| EU (Frankfurt) | eu-central-1 | ami-08eb700778f03ea94 | ami-000622b1016d2a5bf |
-| EU (Stockholm) | eu-north-1 | ami-068b8a1efffd30eda | ami-cc149ab2 |
-| EU (Ireland) | eu-west-1 | ami-0de10c614955da932 | ami-0dafd3a1dc43781f7 |
-| Asia Pacific (Tokyo) | ap-northeast-1 | ami-06398bdd37d76571d | ami-0afc9d14b2fe11ad9 |
-| Asia Pacific (Seoul) | ap-northeast-2 | ami-08a87e0a7c32fa649 | ami-0d75b9ab57bfc8c9a |
-| Asia Pacific (Singapore) | ap-southeast-1 | ami-0ac3510e44b5bf8ef | ami-0ecce0670cb66d17b |
-| Asia Pacific (Sydney) | ap-southeast-2 | ami-0d2c929ace88cfebe | ami-03b048bd9d3861ce9 |
-
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|:----:|:-----:|:-----:|
-| vpc_id | VPC where the cluster and workers will be deployed | string | n/a | yes |
-| subnets_id | A list of subnets to place the EKS cluster and workers within | list | n/a | yes |
-| project | Project name is used to identify resources | string | test | no |
-| environment | Environment name is used to identify resources | string | env | no |
-| ami_id | AMI ID for the eks workers. Look AMI-s table | string | n/a | yes |
-| asg_desired_capacity | Desired worker capacity in the autoscaling group. | string | 1 | no |
-| asg_min_size | Minimum worker capacity in the autoscaling group. | string | 1 | no |
-| placement_tenancy | The tenancy of the instance. Valid values are default or dedicated. | string | "" | no |
-| root_volume_size | root volume size of workers instances. | string | 100 | no |
-| root_volume_type | root volume type of workers instances can be standard gp2 or io1 | string | gp2 | no |
-| root_iops | The amount of provisioned IOPS. This must be set with a volume_type of io1. | string | 0 | no |
-| key_name | The key name that should be used for the instances in the autoscaling group | string | "" | no |
-| pre_userdata | userdata to pre-append to the default userdata. | string | "" | no |
-| additional_userdata | userdata to append to the default userdata. | string | "" | no |
-| ebs_optimized | sets whether to use ebs optimization on supported types. | boolean | true | no |
-| enable_monitoring | Enables/disables detailed monitoring. | boolean | true | no |
-| public_ip | Associate a public ip address with a worker | boolean | false | no |
-| kubelet_extra_args | This string is passed directly to kubelet if set. Useful for adding labels or taints. | string | "" | no |
-| autoscaling_enabled | Sets whether policy and matching tags will be added to allow autoscaling. | boolean | true | no |
-| additional_security_group_ids | A comma delimited list of additional security group ids to include in worker launch config | string | "" | no |
-| protect_from_scale_in | Prevent AWS from scaling in, so that cluster-autoscaler is solely responsible. | boolean | false | no |
-| suspended_processes | A comma delimited string of processes to to suspend. i.e. AZRebalance HealthCheck ReplaceUnhealthy | string | "" | no |
-| target_group_arns | A comma delimited list of ALB target group ARNs to be associated to the ASG | string | "" | no |
-| instance_type | Size of the workers instances what will be used in EKS-cluster | string | m4.large | no |
-| asg_max_size | Maximum worker capacity in in cluster | string | 5 | no |
-| spot_price | Cost of spot instance. Value 1 equals one dollar. 0.01 equals one cent. Set this variable if you want run cluster on spot instances | string | 0.1 | no |
-| SimpleScaling_policys | A list of AS-policys. Trigger for scaling ASG. Only policy_type SimpleScaling | list | [] | no |
-| StepScaling_policys | A list of AS-policys. Trigger for scaling ASG. Only policy_type StepScaling | list | [] | no |
-| SimpleAlarmScaling_policys | A list of AS-policys. Trigger for scaling ASG. Only policy_type SimpleScaling | list | [] | no |
-| TargetTracking_policys | A list of AS-policys. Trigger for scaling ASG. Only policy_type TargetTrackingScaling | list | [] | no |
+| alb\_ingress\_rules | List of maps that contains ingress rules for ALB security group | list | `[{from_port = 80, to_port = 80, protocol = "tcp", cidr_blocks = "0.0.0.0/0"}, {from_port = 443, to_port = 443, protocol = "tcp", cidr_blocks = "0.0.0.0/0"}]` | no |
+| alb\_route53\_record | Alias Route53 DNS record name for ALB | string | n/a | yes |
+| alternative\_domains | Alternative domains for ACM certificate dns records with ',' as delimiter | list | `[]` | no |
+| alternative\_domains\_count | Alternative domains count for ACM certificate | string | `"0"` | no |
+| service\_on\_demand\_configuration | List of maps that contains configurations for ASGs with on-demand workers instances what will be used in EKS-cluster | list | `[{ instance_type = "t3.small", asg_max_size  = "1", asg_min_size  = "1", asg_desired_capacity = "1", additional_kubelet_args = ""}]` | no |
+| cidr\_whitelist | List of maps that contains IP CIDR with protocol type. Example provided in module examples | list | `[]` | no |
+| cluster\_enabled\_log\_types | A list of the desired control plane logging to enable. For more information, see Amazon EKS Control Plane Logging documentation (https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html) | list | `[]` | no |
+| cluster\_version | Kubernetes version to use for the EKS cluster. | string | `"1.14"` | no |
+| container\_logs\_retention\_days | Set retention period for AWS CloudWatch log group with container logs | string | `"5"` | no |
+| create\_acm\_certificate | Set true for ACM certificate for ALB creation | string | `"true"` | no |
+| deploy\_external\_dns | Set true for External DNS installation (https://github.com/kubernetes-incubator/external-dns#externaldns) | string | `"false"` | no |
+| deploy\_ingress\_controller | Set true for nginx ingress controller installation (https://github.com/kubernetes/ingress-nginx#nginx-ingress-controller) | string | `"true"` | no |
+| enable\_container\_logs | Set true to install fluentd and store container logs in AWS CloudWatch log group (https://github.com/helm/charts/tree/master/incubator/fluentd-cloudwatch#fluentd-cloudwatch) | string | `"false"` | no |
+| enable\_monitoring | Set true for prometheus-operator (https://github.com/helm/charts/tree/master/stable/prometheus-operator#prometheus-operator) and grafana (https://github.com/helm/charts/tree/master/stable/grafana#grafana-helm-chart) deployment. Also storageClass will be created. | string | `"false"` | no |
+| enable\_waf | Set true to enable Web Application Firewall for whitelisting | string | `"false"` | no |
+| environment | Environment name is used to identify resources | string | n/a | yes |
+| local\_exec\_interpreter | Command to run for local-exec resources. Must be a shell-style interpreter. If you are on Windows Git Bash is a good choice. | list | `["/bin/sh", "-c"]` | no |
+| map\_roles | Additional IAM roles to add to the aws-auth configmap. See examples/eks_test_fixture/variables.tf for example format. | list | `[]` | no |
+| map\_roles\_count | The count of roles in the map_roles list. | string | `"0"` | no |
+| monitoring\_availability\_zone | Availability zone in which will be deployed grafana and prometheus-operator, as this deployments required persistent volumes for data storing. If variable not set - availability zone of first subnet in private_subnets array will be used. | string | `""` | no |
+| on\_demand\_configuration | List of maps that contains configurations for ASGs with on-demand workers instances what will be used in EKS-cluster | list | `[{instance_type = "m4.xlarge", asg_max_size  = "6", asg_min_size  = "0", asg_desired_capacity = "0", additional_kubelet_args = ""}]` | no |
+| private\_subnets | List of private subnets for cluster worker nodes provisioning | list | n/a | yes |
+| project | Project name is used to identify resources | string | n/a | yes |
+| public\_subnets | List of public subnets for ALB provisioning | list | n/a | yes |
+| root\_domain | Root domain in which custom DNS record for ALB would be created | string | n/a | yes |
+| spot\_configuration | List of maps that contains configurations for ASGs with spot workers instances what will be used in EKS-cluster | list | `[{instance_type = "m4.large", spot_price = "0.05", asg_max_size  = "4", asg_min_size  = "1", asg_desired_capacity = "1", additional_kubelet_args = ""}, {instance_type = "m4.xlarge", spot_price    = "0.08", asg_max_size  = "4", asg_min_size  = "0", asg_desired_capacity = "0", additional_kubelet_args = ""}]` | no |
+| target\_group\_port | ALB targer group port. This value will be used as NodePort for Nginx Ingress controller service. | string | `"30080"` | no |
+| volume\_size | Volume size(GB) for worker node in cluster | string | `"50"` | no |
+| vpc\_id | VPC ID for cluster provisioning | string | n/a | yes |
+| worker\_nodes\_ssh\_key | If Public ssh key provided, will be used for ssh access to worker nodes. Otherwise instances will be created without ssh key. | string | `""` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| cluster_certificate_authority_data | Nested attribute containing certificate-authority-data for your cluster. This is the base64 encoded certificate data required to communicate with your cluster |
-| cluster_endpoint | The endpoint for your EKS Kubernetes API |
-| cluster_id | The name/id of the EKS cluster |
-| cluster_security_group_id | Security group ID attached to the EKS cluster |
-| cluster_version | The Kubernetes server version for the EKS cluster |
-| config_map_aws_auth | A kubernetes configuration to authenticate to this EKS cluster |
-| kubeconfig | kubectl config file contents for this EKS cluster |
-| worker_iam_role_arn | default IAM role ARN for EKS worker groups |
-| worker_iam_role_name | default IAM role name for EKS worker groups |
-| worker_security_group_id | Security group ID attached to the EKS workers |
-| workers_asg_arns | IDs of the autoscaling groups containing workers |
-| workers_asg_names | Names of the autoscaling groups containing workers |
-| simpleAlarm_id | List of The ID-s of the health check for simpleAlarm_policy_alarm |
-| stepAlarm_id | List of The ID-s of the health check for step_policy_alarm |
-| SimpleScaling_ASG_policy_arn | List of The ARN assigneds by AWS to the scaling policy for SimpleScaling_ASG_policy |
-| SimpleAlarmScaling_ASG_policy_arn | List of The ARN assigneds by AWS to the scaling policy for SimpleAlarmScaling_ASG_policy |
-| StepScaling_ASG_policy_arn | List of The ARN assigneds by AWS to the scaling policy for StepScaling_ASG_policy |
-| TargetTracking_ASG_policy_arn | List of The ARN assigneds by AWS to the scaling policy for TargetTracking_ASG_policy |
-| SimpleScaling_ASG_policy_name | List of The scaling policys name for SimpleScaling_ASG_policy |
-| SimpleAlarmScaling_ASG_policy_name | List of The scaling policys name for SimpleAlarmScaling_ASG_policy |
-| StepScaling_ASG_policy_name | List of The scaling policys name for StepScaling_ASG_policy |
-| TargetTracking_ASG_policy_name | List of The scaling policys name for TargetTracking_ASG_policy |
-| SimpleScaling_ASG_policy_adjustment_type | List of The scaling policys adjustment type for SimpleScaling_ASG_policy |
-| SimpleAlarmScaling_ASG_policy_adjustment_type | List of The scaling policys adjustment type for SimpleAlarmScaling_ASG_policy |
-| StepScaling_ASG_policy_adjustment_type | List of The scaling policys adjustment type for StepScaling_ASG_policy |
-| TargetTracking_ASG_policy_adjustment_type | List of The scaling policys adjustment type for TargetTracking_ASG_policy |
-| SimpleScaling_ASG_policy_group_name | List of The scaling policys assigned autoscaling group for SimpleScaling_ASG_policy |
-| SimpleAlarmScaling_ASG_policy_group_name | List of The scaling policys assigned autoscaling group for SimpleAlarmScaling_ASG_policy |
-| StepScaling_ASG_policy_group_name | List of The scaling policys assigned autoscaling group for StepScaling_ASG_policy |
-| TargetTracking_ASG_policy_group_name | List of The scaling policys assigned autoscaling group for TargetTracking_ASG_policy |
-| SimpleScaling_ASG_policy_policy_type | List of The scaling policys type for SimpleScaling_ASG_policy |
-| SimpleAlarmScaling_ASG_policy_policy_type | List of The scaling policys type for SimpleAlarmScaling_ASG_policy |
-| StepScaling_ASG_policy_policy_type | List of The scaling policys type for StepScaling_ASG_policy |
-| TargetTracking_ASG_policy_policy_type | List of The scaling policys type for TargetTracking_ASG_policy |
-
-## Terraform versions
-
-Terraform version 0.11.11 or newer is required for this module to work.
-
-## Contributing
-
-Thank you for your interest in contributing! Please refer to [CONTRIBUTING.md](https://github.com/lean-delivery/tf-module-aws-eks/blob/master/CONTRIBUTING.md) for guidance.
-
-## License
-
-Apache2.0 Licensed. See [LICENSE](https://github.com/lean-delivery/tf-module-aws-eks/tree/master/LICENSE) for full details.
-
-## Authors
-
-Lean Delivery Team <team@lean-delivery.com>
+| acm\_certificate\_arn | ACM certificate arn for ALB. |
+| acm\_certificate\_domain | ACM certificate domain for ALB. |
+| alb\_arn | ALB arn for access to EKS deployments webUI. |
+| alb\_dns\_name | ALB dns name for access to EKS deployments webUI. |
+| alb\_http\_listener\_arn | ALB http listener arn. |
+| alb\_https\_listener\_arn | ALB https listener arn. |
+| alb\_security\_group\_arn | ALB security group arn. |
+| alb\_security\_group\_id | ALB security group id. |
+| alb\_security\_group\_name | ALB security group name. |
+| alb\_target\_group\_arn | ALB target group arn. |
+| alb\_target\_group\_name | ALB target group name. |
+| cluster\_arn | The Amazon Resource Name (ARN) of the cluster. |
+| cluster\_certificate\_authority\_data | EKS cluster certificate. |
+| cluster\_endpoint | EKS cluster API endpoint. |
+| cluster\_iam\_role\_arn | IAM role ARN of the EKS cluster. |
+| cluster\_iam\_role\_name | IAM role name of the EKS cluster. |
+| cluster\_id | EKS cluster id. |
+| cluster\_security\_group\_id | EKS cluster security group id. |
+| cluster\_version | EKS cluster version. |
+| config\_map\_aws\_auth | A kubernetes configuration to authenticate to this EKS cluster. |
+| iam\_instance\_profile\_name | IAM instance profile name for EKS worker nodes. |
+| kubeconfig | kubectl config file contents for this EKS cluster. |
+| kubeconfig\_filename | The filename of the generated kubectl config. |
+| launch\_configuration\_on\_demand\_asg\_names | Launch configuration name for EKS on-demand worker nodes. |
+| launch\_configuration\_service\_on\_demand\_asg\_names | Launch configuration name for EKS non-scalable on-demand worker nodes. |
+| launch\_configuration\_spot\_asg\_names | Launch configurations names for EKS spot worker nodes. |
+| on\_demand\_asg\_arns | EKS on-demand worker nodes ASGs arns. |
+| on\_demand\_asg\_ids | EKS on-demand worker nodes ASGs IDs. |
+| on\_demand\_asg\_names | EKS on-demand worker nodes ASGs names. |
+| service\_on\_demand\_asg\_arns | EKS non-scalable on-demand worker nodes ASGs arns. |
+| service\_on\_demand\_asg\_ids | EKS non-scalable on-demand worker nodes ASGs IDs. |
+| service\_on\_demand\_asg\_names | EKS non-scalable on-demand worker nodes ASGs names. |
+| path\_to\_manifests | Path to rendered manifests for EKS deployments. |
+| spot\_asg\_arns | EKS spot worker nodes ASGs arns. |
+| spot\_asg\_ids | EKS spot worker nodes ASGs IDs. |
+| spot\_asg\_names | EKS spot worker nodes ASGs names. |
+| ssh\_key\_name | SSH key name for worker nodes. |
+| worker\_iam\_role\_arn | IAM role ARN for EKS worker groups. |
+| worker\_iam\_role\_name | IAM role name for EKS worker groups. |
+| worker\_security\_group\_id | Security group ID attached to the EKS workers. |
