@@ -16,7 +16,7 @@ module "core" {
 }
 
 module "eks_test" {
-  source = "./module"
+  source = "github.com/lean-delivery/tf-module-aws-eks?ref=v1.0"
 
   project      = "eks"
   environment  = "test"

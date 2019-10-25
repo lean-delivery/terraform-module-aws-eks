@@ -6,21 +6,21 @@ By defaut terraform code will provision EKS cluster, IAM roles for worker nodes 
 
 ## Deployment diagram:
 
-![deployment](module/draw.io/eks_infra.png)
+![deployment](draw.io/eks_infra.png)
 
 ## Default EKS deployments:
 
-![deployment](module/draw.io/default_deployments.png)
+![deployment](draw.io/default_deployments.png)
 
 Optionally following features can be enabled:
  * ACM certificate for ALB;
  * AWS WAF for whitelisting;
  * deploy [fluend](https://github.com/helm/charts/tree/master/incubator/fluentd-cloudwatch#fluentd-cloudwatch) for container logs aggregation. Logs will be stored in AWS CloudWatch logs group:
 
-   ![fluentd](module/draw.io/fluentd.png)
+   ![fluentd](draw.io/fluentd.png)
  * deploy [external-dns](https://github.com/kubernetes-incubator/external-dns#externaldns) service:
 
-   ![externalDNS](module/draw.io/externalDNS.png)
+   ![externalDNS](draw.io/externalDNS.png)
  * deploy [prometheus-operator](https://github.com/coreos/prometheus-operator#prometheus-operator) with [Grafana](https://github.com/helm/charts/tree/master/stable/grafana#grafana-helm-chart):
    ![monitoring](module/draw.io/monitoring.png)
 
@@ -64,7 +64,7 @@ module "core" {
 }
 
 module "eks_test" {
-  source = "./module"
+  source = "github.com/lean-delivery/tf-module-aws-eks?ref=v1.0"
 
   project      = "eks"
   environment  = "test"
