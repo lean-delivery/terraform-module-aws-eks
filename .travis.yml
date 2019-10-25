@@ -9,6 +9,11 @@ services:
   - docker
 
 script:
+  - sudo apt-get install unzip -y
+  - wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
+  - unzip terraform_0.11.13_linux_amd64.zip
+  - sudo mv terraform /usr/local/bin/
+  - terraform --version
   - docker run --rm -v $(pwd):/work/ --workdir=/work/ -t leandelivery/docker-terraform-ci terraform fmt -check=true
   - docker run --rm -v $(pwd):/work/ --workdir=/work/ -t leandelivery/docker-terraform-ci terraform init
   - docker run --rm -v $(pwd):/work/ --workdir=/work/ -t leandelivery/docker-terraform-ci terraform validate -check-variables=false

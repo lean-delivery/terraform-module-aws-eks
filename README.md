@@ -236,7 +236,7 @@ module "eks_test" {
 
 ## Terraform versions
 
-Terraform version 0.11.11 or newer is required for this module to work.
+Terraform version 0.11.14 or newer is required for this module to work.
 
 ## Contributing
 
