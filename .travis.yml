@@ -14,7 +14,7 @@ script:
   - unzip terraform_0.11.13_linux_amd64.zip
   - sudo mv terraform /usr/local/bin/
   - terraform --version
-  - cred-alert update
+  - docker run --rm -v $(pwd):/work/ --workdir=/work/ -t leandelivery/docker-terraform-ci cred-alert update
   - docker run --rm -v $(pwd):/work/ --workdir=/work/ -t leandelivery/docker-terraform-ci terraform fmt -check=true
   - docker run --rm -v $(pwd):/work/ --workdir=/work/ -t leandelivery/docker-terraform-ci terrascan --location . --test all
   - docker run --rm -v $(pwd):/work/ --workdir=/work/ -t leandelivery/docker-terraform-ci terraform init
