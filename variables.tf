@@ -29,19 +29,20 @@ variable "alb_route53_record" {
 variable "alb_ingress_rules" {
   description = "List of maps that contains ingress rules for ALB security group"
   type        = "list"
-  default     = [
+
+  default = [
     {
-      from_port = 80,
-      to_port = 80,
-      protocol = "tcp",
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
       cidr_blocks = "0.0.0.0/0"
     },
     {
-      from_port = 443,
-      to_port = 443,
-      protocol = "tcp",
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
       cidr_blocks = "0.0.0.0/0"
-    }
+    },
   ]
 }
 
@@ -52,12 +53,12 @@ variable "cidr_whitelist" {
 
 variable "enable_waf" {
   description = "Set true to enable Web Application Firewall for whitelisting"
-  default = false
+  default     = false
 }
 
 variable "create_acm_certificate" {
   description = "Set true for ACM certificate for ALB creation"
-  default = true
+  default     = true
 }
 
 variable "target_group_port" {
@@ -126,51 +127,54 @@ variable "worker_nodes_ssh_key" {
 variable "spot_configuration" {
   description = "List of maps that contains configurations for ASGs with spot workers instances what will be used in EKS-cluster"
   type        = "list"
-  default     = [
+
+  default = [
     {
-      instance_type = "m4.large",
-      spot_price    = "0.05",
-      asg_max_size  = "4",
-      asg_min_size  = "1",
-      asg_desired_capacity = "1",
+      instance_type           = "m4.large"
+      spot_price              = "0.05"
+      asg_max_size            = "4"
+      asg_min_size            = "1"
+      asg_desired_capacity    = "1"
       additional_kubelet_args = ""
     },
     {
-      instance_type = "m4.xlarge",
-      spot_price    = "0.08",
-      asg_max_size  = "4",
-      asg_min_size  = "0",
-      asg_desired_capacity = "0",
+      instance_type           = "m4.xlarge"
+      spot_price              = "0.08"
+      asg_max_size            = "4"
+      asg_min_size            = "0"
+      asg_desired_capacity    = "0"
       additional_kubelet_args = ""
-    }
+    },
   ]
 }
 
 variable "on_demand_configuration" {
   description = "List of maps that contains configurations for ASGs with on-demand workers instances what will be used in EKS-cluster"
   type        = "list"
-  default     = [
+
+  default = [
     {
-      instance_type = "m4.xlarge",
-      asg_max_size  = "6",
-      asg_min_size  = "0",
-      asg_desired_capacity = "0",
+      instance_type           = "m4.xlarge"
+      asg_max_size            = "6"
+      asg_min_size            = "0"
+      asg_desired_capacity    = "0"
       additional_kubelet_args = ""
-    }
+    },
   ]
 }
 
 variable "service_on_demand_configuration" {
   description = "List of maps that contains configurations for ASGs with on-demand workers instances what will be used in EKS-cluster"
   type        = "list"
-  default     = [
+
+  default = [
     {
-      instance_type = "t3.small",
-      asg_max_size  = "1",
-      asg_min_size  = "1",
-      asg_desired_capacity = "1",
+      instance_type           = "t3.small"
+      asg_max_size            = "1"
+      asg_min_size            = "1"
+      asg_desired_capacity    = "1"
       additional_kubelet_args = ""
-    }
+    },
   ]
 }
 

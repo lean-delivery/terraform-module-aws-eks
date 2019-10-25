@@ -12,7 +12,7 @@ module "acm-cert" {
   zone_id = "${data.aws_route53_zone.hosted_zone.id}"
 
   alternative_domains_count = "${var.alternative_domains_count}"
-  alternative_domains = "${var.alternative_domains}"
+  alternative_domains       = "${var.alternative_domains}"
 }
 
 module "alb-waf" {
@@ -32,6 +32,7 @@ resource "aws_lb_target_group" "alb" {
   protocol    = "HTTP"
   vpc_id      = "${var.vpc_id}"
   target_type = "instance"
+
   health_check {
     path = "/healthz"
   }
@@ -43,10 +44,10 @@ resource "aws_security_group" "alb-security-group" {
   vpc_id      = "${var.vpc_id}"
 
   egress {
-    from_port       = 0
-    to_port         = 0
-    protocol        = "-1"
-    cidr_blocks     = ["0.0.0.0/0"]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
@@ -71,7 +72,7 @@ resource "aws_lb" "alb" {
   name               = "${var.project}-${var.environment}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = ["${aws_security_group.alb-security-group.id}","${module.eks.worker_security_group_id}"]
+  security_groups    = ["${aws_security_group.alb-security-group.id}", "${module.eks.worker_security_group_id}"]
   subnets            = "${var.public_subnets}"
 
   enable_deletion_protection = false

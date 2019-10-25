@@ -93,7 +93,6 @@ EOS
 }
 
 data "template_file" "external_dns_manifest" {
-
   template = "${file("${path.module}/manifests_templates/external-dns.tpl")}"
 
   vars = {
@@ -122,11 +121,9 @@ EOS
 
     interpreter = ["${var.local_exec_interpreter}"]
   }
-
 }
 
 data "template_file" "cluster_autoscaler_config" {
-
   template = "${file("${path.module}/manifests_templates/cluster-autoscaler/kubernetes-autoscaler.tpl")}"
 
   vars = {
@@ -141,7 +138,6 @@ resource "local_file" "cluster_autoscaler_config" {
 }
 
 data "template_file" "cluster_autoscaler_priority_configmap" {
-
   template = "${file("${path.module}/manifests_templates/cluster-autoscaler/autoscaler-priority.tpl")}"
 
   vars = {
@@ -156,7 +152,7 @@ resource "local_file" "cluster_autoscaler_priority_configmap" {
 }
 
 resource "null_resource" "deploy_cluster_autoscaler" {
-  depends_on = ["local_file.cluster_autoscaler_config", "null_resource.priority_class",  "local_file.cluster_autoscaler_priority_configmap"]
+  depends_on = ["local_file.cluster_autoscaler_config", "null_resource.priority_class", "local_file.cluster_autoscaler_priority_configmap"]
 
   provisioner "local-exec" {
     working_dir = "${path.module}"
@@ -203,14 +199,13 @@ EOS
 }
 
 data "template_file" "fluentd_config" {
-
   template = "${file("${path.module}/manifests_templates/fluentd_values.tpl")}"
 
   vars = {
-    region                    = "${data.aws_region.current.name}"
-    project                   = "${var.project}"
-    environment               = "${var.environment}"
-    iam_worker_role           = "${module.eks.worker_iam_role_name}"
+    region          = "${data.aws_region.current.name}"
+    project         = "${var.project}"
+    environment     = "${var.environment}"
+    iam_worker_role = "${module.eks.worker_iam_role_name}"
   }
 }
 
@@ -236,7 +231,6 @@ EOS
 }
 
 data "template_file" "storage_class" {
-
   template = "${file("${path.module}/manifests_templates/monitoring/storageClass.tpl")}"
 
   vars = {
@@ -245,7 +239,6 @@ data "template_file" "storage_class" {
 }
 
 data "template_file" "grafana_pvc" {
-
   template = "${file("${path.module}/manifests_templates/monitoring/grafana-pvc.tpl")}"
 
   vars = {
@@ -254,24 +247,22 @@ data "template_file" "grafana_pvc" {
 }
 
 data "template_file" "prometheus_operator_values" {
-
   template = "${file("${path.module}/manifests_templates/monitoring/prometheus-operator-values.tpl")}"
 
   vars = {
     external_dns_annotation = "${aws_route53_record.alb-route53-record.name}"
-    ingress_domain = "${var.root_domain}"
-    availability_zone = "${local.pvc_az}"
+    ingress_domain          = "${var.root_domain}"
+    availability_zone       = "${local.pvc_az}"
   }
 }
 
 data "template_file" "grafana_values" {
-
   template = "${file("${path.module}/manifests_templates/monitoring/grafana-values.tpl")}"
 
   vars = {
     external_dns_annotation = "${aws_route53_record.alb-route53-record.name}"
-    ingress_domain = "${var.root_domain}"
-    availability_zone = "${local.pvc_az}"
+    ingress_domain          = "${var.root_domain}"
+    availability_zone       = "${local.pvc_az}"
   }
 }
 

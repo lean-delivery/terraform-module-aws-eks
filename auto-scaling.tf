@@ -15,11 +15,12 @@ data "template_file" "spot_user_data" {
   count = "${length(var.spot_configuration)}"
 
   template = "${file("${path.module}/user_data/spot.tpl")}"
+
   vars = {
-    certificate_data = "${module.eks.cluster_certificate_authority_data}"
-    api_endpoint = "${module.eks.cluster_endpoint}"
-    project = "${var.project}"
-    environment = "${var.environment}"
+    certificate_data        = "${module.eks.cluster_certificate_authority_data}"
+    api_endpoint            = "${module.eks.cluster_endpoint}"
+    project                 = "${var.project}"
+    environment             = "${var.environment}"
     additional_kubelet_args = "${lookup(var.spot_configuration[count.index], "additional_kubelet_args")}"
   }
 }
@@ -28,11 +29,12 @@ data "template_file" "on_demand_user_data" {
   count = "${length(var.on_demand_configuration)}"
 
   template = "${file("${path.module}/user_data/on_demand.tpl")}"
+
   vars = {
-    certificate_data = "${module.eks.cluster_certificate_authority_data}"
-    api_endpoint = "${module.eks.cluster_endpoint}"
-    project = "${var.project}"
-    environment = "${var.environment}"
+    certificate_data        = "${module.eks.cluster_certificate_authority_data}"
+    api_endpoint            = "${module.eks.cluster_endpoint}"
+    project                 = "${var.project}"
+    environment             = "${var.environment}"
     additional_kubelet_args = "${lookup(var.on_demand_configuration[count.index], "additional_kubelet_args")}"
   }
 }
@@ -41,11 +43,12 @@ data "template_file" "service_on_demand_user_data" {
   count = "${length(var.service_on_demand_configuration)}"
 
   template = "${file("${path.module}/user_data/service_on_demand.tpl")}"
+
   vars = {
-    certificate_data = "${module.eks.cluster_certificate_authority_data}"
-    api_endpoint = "${module.eks.cluster_endpoint}"
-    project = "${var.project}"
-    environment = "${var.environment}"
+    certificate_data        = "${module.eks.cluster_certificate_authority_data}"
+    api_endpoint            = "${module.eks.cluster_endpoint}"
+    project                 = "${var.project}"
+    environment             = "${var.environment}"
     additional_kubelet_args = "${lookup(var.service_on_demand_configuration[count.index], "additional_kubelet_args")}"
   }
 }
@@ -129,6 +132,7 @@ resource "aws_autoscaling_group" "spot-asg" {
     value               = ""
     propagate_at_launch = false
   }
+
   tag {
     key                 = "Project"
     value               = "${var.project}"
@@ -191,47 +195,47 @@ resource "aws_autoscaling_group" "on-demand-asg" {
     ignore_changes        = ["desired_capacity"]
   }
 
-    tag {
-      key                 = "k8s.io/cluster-autoscaler/enabled"
-      value               = "true"
-      propagate_at_launch = true
-    }
+  tag {
+    key                 = "k8s.io/cluster-autoscaler/enabled"
+    value               = "true"
+    propagate_at_launch = true
+  }
 
-    tag {
-      key                 = "Name"
-      value               = "${var.project}-${var.environment}-on-demand-asg-${lookup(var.on_demand_configuration[count.index / length(var.private_subnets)], "instance_type")}-${count.index % length(var.private_subnets)}"
-      propagate_at_launch = true
-    }
+  tag {
+    key                 = "Name"
+    value               = "${var.project}-${var.environment}-on-demand-asg-${lookup(var.on_demand_configuration[count.index / length(var.private_subnets)], "instance_type")}-${count.index % length(var.private_subnets)}"
+    propagate_at_launch = true
+  }
 
-    tag {
-      key                 = "k8s.io/cluster-autoscaler/${var.project}-${var.environment}"
-      value               = ""
-      propagate_at_launch = false
-    }
+  tag {
+    key                 = "k8s.io/cluster-autoscaler/${var.project}-${var.environment}"
+    value               = ""
+    propagate_at_launch = false
+  }
 
-    tag {
-      key                 = "kubernetes.io/cluster/${var.project}-${var.environment}"
-      value               = "owned"
-      propagate_at_launch = true
-    }
+  tag {
+    key                 = "kubernetes.io/cluster/${var.project}-${var.environment}"
+    value               = "owned"
+    propagate_at_launch = true
+  }
 
-    tag {
-      key                 = "Project"
-      value               = "${var.project}"
-      propagate_at_launch = true
-    }
+  tag {
+    key                 = "Project"
+    value               = "${var.project}"
+    propagate_at_launch = true
+  }
 
-    tag {
-      key                 = "Environment"
-      value               = "${var.environment}"
-      propagate_at_launch = true
-    }
+  tag {
+    key                 = "Environment"
+    value               = "${var.environment}"
+    propagate_at_launch = true
+  }
 
-    tag {
-      key                 = "k8s.io/cluster-autoscaler/node-template/resources/ephemeral-storage"
-      value               = "${var.volume_size}Gi"
-      propagate_at_launch = false
-    }
+  tag {
+    key                 = "k8s.io/cluster-autoscaler/node-template/resources/ephemeral-storage"
+    value               = "${var.volume_size}Gi"
+    propagate_at_launch = false
+  }
 }
 
 resource "aws_launch_configuration" "service" {

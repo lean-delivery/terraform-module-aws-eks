@@ -4,7 +4,7 @@ data "aws_iam_policy_document" "external-dns-policy" {
 
     actions = [
       "route53:ListHostedZones",
-      "route53:ListResourceRecordSets"
+      "route53:ListResourceRecordSets",
     ]
 
     resources = [
@@ -16,7 +16,7 @@ data "aws_iam_policy_document" "external-dns-policy" {
     effect = "Allow"
 
     actions = [
-      "route53:ChangeResourceRecordSets"
+      "route53:ChangeResourceRecordSets",
     ]
 
     resources = [
@@ -26,14 +26,14 @@ data "aws_iam_policy_document" "external-dns-policy" {
 }
 
 resource "aws_iam_policy" "external-dns-policy" {
-  count      = "${ var.deploy_external_dns ? 1 : 0 }"
+  count = "${ var.deploy_external_dns ? 1 : 0 }"
 
   name   = "${var.project}-${var.environment}-external-dns-policy"
   policy = "${data.aws_iam_policy_document.external-dns-policy.json}"
 }
 
 resource "aws_iam_role_policy_attachment" "external-dns-policy" {
-  count      = "${ var.deploy_external_dns ? 1 : 0 }"
+  count = "${ var.deploy_external_dns ? 1 : 0 }"
 
   role       = "${module.eks.worker_iam_role_name}"
   policy_arn = "${aws_iam_policy.external-dns-policy.arn}"
@@ -49,7 +49,7 @@ data "aws_iam_policy_document" "k8s-autoscaler" {
       "autoscaling:SetDesiredCapacity",
       "autoscaling:TerminateInstanceInAutoScalingGroup",
       "autoscaling:DescribeTags",
-      "autoscaling:DescribeLaunchConfigurations"
+      "autoscaling:DescribeLaunchConfigurations",
     ]
 
     resources = [
@@ -76,7 +76,7 @@ data "aws_iam_policy_document" "cloudwatch-access" {
       "logs:CreateLogStream",
       "logs:PutLogEvents",
       "logs:DescribeLogGroups",
-      "logs:DescribeLogStreams"
+      "logs:DescribeLogStreams",
     ]
 
     resources = [
@@ -86,14 +86,14 @@ data "aws_iam_policy_document" "cloudwatch-access" {
 }
 
 resource "aws_iam_policy" "cloudwatch-access" {
-  count      = "${ var.enable_container_logs ? 1 : 0 }"
+  count = "${ var.enable_container_logs ? 1 : 0 }"
 
   name   = "${var.project}-${var.environment}-cloudwatch-access-policy"
   policy = "${data.aws_iam_policy_document.cloudwatch-access.json}"
 }
 
 resource "aws_iam_role_policy_attachment" "cloudwatch-access" {
-  count      = "${ var.enable_container_logs ? 1 : 0 }"
+  count = "${ var.enable_container_logs ? 1 : 0 }"
 
   role       = "${module.eks.worker_iam_role_name}"
   policy_arn = "${aws_iam_policy.cloudwatch-access.arn}"
