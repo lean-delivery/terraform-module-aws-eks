@@ -175,8 +175,6 @@ module "eks_test" {
 | enable\_waf | Set true to enable Web Application Firewall for whitelisting | string | `"false"` | no |
 | environment | Environment name is used to identify resources | string | n/a | yes |
 | local\_exec\_interpreter | Command to run for local-exec resources. Must be a shell-style interpreter. If you are on Windows Git Bash is a good choice. | list | `["/bin/sh", "-c"]` | no |
-| map\_roles | Additional IAM roles to add to the aws-auth configmap. See examples/eks_test_fixture/variables.tf for example format. | list | `[]` | no |
-| map\_roles\_count | The count of roles in the map_roles list. | string | `"0"` | no |
 | monitoring\_availability\_zone | Availability zone in which will be deployed grafana and prometheus-operator, as this deployments required persistent volumes for data storing. If variable not set - availability zone of first subnet in private_subnets array will be used. | string | `""` | no |
 | on\_demand\_configuration | List of maps that contains configurations for ASGs with on-demand workers instances what will be used in EKS-cluster | list | `[{instance_type = "m4.xlarge", asg_max_size  = "6", asg_min_size  = "0", asg_desired_capacity = "0", additional_kubelet_args = ""}]` | no |
 | private\_subnets | List of private subnets for cluster worker nodes provisioning | list | n/a | yes |

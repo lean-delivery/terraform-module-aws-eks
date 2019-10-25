@@ -40,8 +40,6 @@ module "eks" {
   subnets                   = "${var.private_subnets}"
   cluster_enabled_log_types = "${var.cluster_enabled_log_types}"
   cluster_version           = "${var.cluster_version}"
-  map_roles                 = "${var.map_roles}"
-  map_roles_count           = "${var.map_roles_count}"
   local_exec_interpreter    = "${var.local_exec_interpreter}"
 
   worker_groups = [
