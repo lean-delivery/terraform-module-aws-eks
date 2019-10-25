@@ -1,5 +1,7 @@
 
-# EKS terraform module
+# Terraform EKS module
+
+## Description
 
 Module provisions scalable EKS cluster with EC2 spot instances as worker nodes.
 By defaut terraform code will provision EKS cluster, IAM roles for worker nodes and cluster, additional IAM policies, security groups, instance profile, autoscaling groups and launch configurations for spot and on-demand worker nodes (autoscaling groups will be created per AZ for each launch configuration), ALB, Route53 record for ALB, target group. Also module will deploy [cluster-autoscaler](https://github.com/kubernetes/autoscaler/tree/cluster-autoscaler-1.16.1/cluster-autoscaler), [spot termination handler](https://github.com/banzaicloud/banzai-charts/tree/master/spot-termination-handler), [tiller](https://helm.sh/docs/glossary/#tiller),  [metric server](https://github.com/helm/charts/tree/master/stable/metrics-server#metrics-server) and [nginx-ingress-controller](https://github.com/kubernetes/ingress-nginx#nginx-ingress-controller).
@@ -43,7 +45,7 @@ Folloving resources shoud be created before cluster provisioning:
 ## NOTES
  * rendered manifests and Helm charts for Kubernetes will be available in ${path.root}/manifests_rendered. Store it for further edition if required.
 
-## Module usage example
+## Usage
 
 ```HCL
 provider "aws" {
@@ -231,3 +233,19 @@ module "eks_test" {
 | worker\_iam\_role\_arn | IAM role ARN for EKS worker groups. |
 | worker\_iam\_role\_name | IAM role name for EKS worker groups. |
 | worker\_security\_group\_id | Security group ID attached to the EKS workers. |
+
+## Terraform versions
+
+Terraform version 0.11.11 or newer is required for this module to work.
+
+## Contributing
+
+Thank you for your interest in contributing! Please refer to [CONTRIBUTING.md](https://github.com/lean-delivery/tf-module-aws-eks/blob/master/CONTRIBUTING.md) for guidance.
+
+## License
+
+Apache2.0 Licensed. See [LICENSE](https://github.com/lean-delivery/tf-module-aws-eks/tree/master/LICENSE) for full details.
+
+## Authors
+
+Lean Delivery Team <team@lean-delivery.com>
