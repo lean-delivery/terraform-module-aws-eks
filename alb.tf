@@ -1,4 +1,4 @@
-data "aws_route53_zone" "hosterd_zone" {
+data "aws_route53_zone" "hosted_zone" {
   name         = "${var.root_domain}"
   private_zone = false
 }
@@ -9,7 +9,7 @@ module "acm-cert" {
   module_enabled = "${var.create_acm_certificate}"
 
   domain  = "${var.alb_route53_record}"
-  zone_id = "${data.aws_route53_zone.hosterd_zone.id}"
+  zone_id = "${data.aws_route53_zone.hosted_zone.id}"
 
   alternative_domains_count = "${var.alternative_domains_count}"
   alternative_domains = "${var.alternative_domains}"
@@ -83,7 +83,7 @@ resource "aws_lb" "alb" {
 }
 
 resource "aws_route53_record" "alb-route53-record" {
-  zone_id = "${data.aws_route53_zone.hosterd_zone.id}"
+  zone_id = "${data.aws_route53_zone.hosted_zone.id}"
   name    = "${var.alb_route53_record}"
   type    = "A"
 
