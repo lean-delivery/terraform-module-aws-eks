@@ -24,7 +24,7 @@ Optionally following features can be enabled:
 
    ![externalDNS](draw.io/externalDNS.png)
  * deploy [prometheus-operator](https://github.com/coreos/prometheus-operator#prometheus-operator) with [Grafana](https://github.com/helm/charts/tree/master/stable/grafana#grafana-helm-chart):
-   ![monitoring](module/draw.io/monitoring.png)
+   ![monitoring](draw.io/monitoring.png)
 
 
 
