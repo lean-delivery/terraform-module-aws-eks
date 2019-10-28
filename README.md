@@ -164,17 +164,23 @@ module "eks_test" {
 | alternative\_domains\_count | Alternative domains count for ACM certificate | string | `"0"` | no |
 | service\_on\_demand\_configuration | List of maps that contains configurations for ASGs with on-demand workers instances what will be used in EKS-cluster | list | `[{ instance_type = "t3.small", asg_max_size  = "1", asg_min_size  = "1", asg_desired_capacity = "1", additional_kubelet_args = ""}]` | no |
 | cidr\_whitelist | List of maps that contains IP CIDR with protocol type. Example provided in module examples | list | `[]` | no |
-| cluster\_enabled\_log\_types | A list of the desired control plane logging to enable. For more information, see Amazon EKS Control Plane Logging documentation (https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html) | list | `[]` | no |
+| cluster\_enabled\_log\_types | A list of the desired control plane logging to enable. For more information, see [Amazon EKS Control Plane Logging documentation](https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html) | list | `[]` | no |
 | cluster\_version | Kubernetes version to use for the EKS cluster. | string | `"1.14"` | no |
 | container\_logs\_retention\_days | Set retention period for AWS CloudWatch log group with container logs | string | `"5"` | no |
 | create\_acm\_certificate | Set true for ACM certificate for ALB creation | string | `"true"` | no |
-| deploy\_external\_dns | Set true for External DNS installation (https://github.com/kubernetes-incubator/external-dns#externaldns) | string | `"false"` | no |
-| deploy\_ingress\_controller | Set true for nginx ingress controller installation (https://github.com/kubernetes/ingress-nginx#nginx-ingress-controller) | string | `"true"` | no |
-| enable\_container\_logs | Set true to install fluentd and store container logs in AWS CloudWatch log group (https://github.com/helm/charts/tree/master/incubator/fluentd-cloudwatch#fluentd-cloudwatch) | string | `"false"` | no |
-| enable\_monitoring | Set true for prometheus-operator (https://github.com/helm/charts/tree/master/stable/prometheus-operator#prometheus-operator) and grafana (https://github.com/helm/charts/tree/master/stable/grafana#grafana-helm-chart) deployment. Also storageClass will be created. | string | `"false"` | no |
+| deploy\_external\_dns | Set true for [External DNS](https://github.com/kubernetes-incubator/external-dns#externaldns) installation. | string | `"false"` | no |
+| deploy\_ingress\_controller | Set true for [nginx ingress controller](https://github.com/kubernetes/ingress-nginx#nginx-ingress-controller) installation | string | `"true"` | no |
+| enable\_container\_logs | Set true to install [fluentd](https://github.com/helm/charts/tree/master/incubator/fluentd-cloudwatch#fluentd-cloudwatch) and store container logs in AWS CloudWatch log group | string | `"false"` | no |
+| enable\_monitoring | Set true for [prometheus-operator](https://github.com/helm/charts/tree/master/stable/prometheus-operator#prometheus-operator) and [grafana](https://github.com/helm/charts/tree/master/stable/grafana#grafana-helm-chart) deployment. Also storageClass will be created. | string | `"false"` | no |
 | enable\_waf | Set true to enable Web Application Firewall for whitelisting | string | `"false"` | no |
 | environment | Environment name is used to identify resources | string | n/a | yes |
 | local\_exec\_interpreter | Command to run for local-exec resources. Must be a shell-style interpreter. If you are on Windows Git Bash is a good choice. | list | `["/bin/sh", "-c"]` | no |
+| map\_accounts | Additional AWS account numbers to add to the aws-auth configmap. See [variables.tf](https://github.com/terraform-aws-modules/terraform-aws-eks/blob/v4.0.0/examples/eks_test_fixture/variables.tf) for example format. | list | `<list>` | no |
+| map\_accounts\_count | The count of accounts in the map_accounts list. | string | `"0"` | no |
+| map\_roles | Additional IAM roles to add to the aws-auth configmap. See [variables.tf](https://github.com/terraform-aws-modules/terraform-aws-eks/blob/v4.0.0/examples/eks_test_fixture/variables.tf) for example format. | list | `<list>` | no |
+| map\_roles\_count | The count of roles in the map_roles list. | string | `"0"` | no |
+| map\_users | Additional IAM users to add to the aws-auth configmap. See [variables.tf](https://github.com/terraform-aws-modules/terraform-aws-eks/blob/v4.0.0/examples/eks_test_fixture/variables.tf) for example format. | list | `<list>` | no |
+| map\_users\_count | The count of roles in the map_users list. | string | `"0"` | no |
 | monitoring\_availability\_zone | Availability zone in which will be deployed grafana and prometheus-operator, as this deployments required persistent volumes for data storing. If variable not set - availability zone of first subnet in private_subnets array will be used. | string | `""` | no |
 | on\_demand\_configuration | List of maps that contains configurations for ASGs with on-demand workers instances what will be used in EKS-cluster | list | `[{instance_type = "m4.xlarge", asg_max_size  = "6", asg_min_size  = "0", asg_desired_capacity = "0", additional_kubelet_args = ""}]` | no |
 | private\_subnets | List of private subnets for cluster worker nodes provisioning | list | n/a | yes |

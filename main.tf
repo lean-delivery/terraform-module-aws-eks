@@ -41,6 +41,12 @@ module "eks" {
   cluster_enabled_log_types = "${var.cluster_enabled_log_types}"
   cluster_version           = "${var.cluster_version}"
   local_exec_interpreter    = "${var.local_exec_interpreter}"
+  map_accounts              = "${var.map_accounts}"
+  map_accounts_count        = "${var.map_accounts_count}"
+  map_roles                 = "${var.map_roles}"
+  map_roles_count           = "${var.map_roles_count}"
+  map_users                 = "${var.map_users}"
+  map_users_count           = "${var.map_users_count}"
 
   worker_groups = [
     {
