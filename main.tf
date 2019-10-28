@@ -1,55 +1,63 @@
-locals {
-  default_tags = {
-    Name        = "${var.project}-${var.environment}"
-    Project     = "${var.project}"
-    Environment = "${var.environment}"
+data "aws_region" "current" {}
+
+data "aws_ami" "eks_ami" {
+  most_recent = true
+  name_regex  = "^amazon-eks-node-${var.cluster_version}-v[0-9]{8}$"
+  owners      = ["602401143452"]
+
+  filter {
+    name   = "name"
+    values = ["amazon-eks-node-${var.cluster_version}-*"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
   }
 }
 
-module "Cluster" {
-  source       = "terraform-aws-modules/eks/aws"
-  cluster_name = "${var.project}-${var.environment}"
-  vpc_id       = "${var.vpc_id}"
-  subnets      = "${var.subnets_id}"
+resource "aws_cloudwatch_log_group" "container_logs" {
+  count = "${ var.enable_container_logs ? 1 : 0 }"
+
+  name              = "${var.project}-${var.environment}-container-logs"
+  retention_in_days = "${var.container_logs_retention_days}"
+
+  tags = {
+    project     = "${var.project}"
+    environment = "${var.environment}"
+  }
+}
+
+module "eks" {
+  source                    = "github.com/terraform-aws-modules/terraform-aws-eks?ref=v4.0.0"
+  cluster_name              = "${var.project}-${var.environment}"
+  vpc_id                    = "${var.vpc_id}"
+  subnets                   = "${var.private_subnets}"
+  cluster_enabled_log_types = "${var.cluster_enabled_log_types}"
+  cluster_version           = "${var.cluster_version}"
+  local_exec_interpreter    = "${var.local_exec_interpreter}"
+  map_accounts              = "${var.map_accounts}"
+  map_accounts_count        = "${var.map_accounts_count}"
+  map_roles                 = "${var.map_roles}"
+  map_roles_count           = "${var.map_roles_count}"
+  map_users                 = "${var.map_users}"
+  map_users_count           = "${var.map_users_count}"
 
   worker_groups = [
     {
-      ami_id                        = "${var.ami_id}"
-      asg_desired_capacity          = "${var.asg_desired_capacity}"
-      asg_max_size                  = "${var.asg_max_size}"
-      asg_min_size                  = "${var.asg_min_size}"
-      instance_type                 = "${var.instance_type}"
-      spot_price                    = "${var.spot_price}"
-      placement_tenancy             = "${var.placement_tenancy}"
-      root_volume_size              = "${var.root_volume_size}"
-      root_volume_type              = "${var.root_volume_type}"
-      root_iops                     = "${var.root_iops}"
-      key_name                      = "${var.key_name}"
-      pre_userdata                  = "${var.pre_userdata}"
-      additional_userdata           = "${var.additional_userdata}"
-      ebs_optimized                 = "${var.ebs_optimized}"
-      enable_monitoring             = "${var.enable_monitoring}"
-      public_ip                     = "${var.public_ip}"
-      kubelet_extra_args            = "${var.kubelet_extra_args}"
-      autoscaling_enabled           = "${var.autoscaling_enabled}"
-      additional_security_group_ids = "${var.additional_security_group_ids}"
-      protect_from_scale_in         = "${var.protect_from_scale_in}"
-      suspended_processes           = "${var.suspended_processes}"
-      target_group_arns             = "${var.target_group_arns}"
+      asg_desired_capacity = "0"
+      asg_max_size         = "0"
+      asg_min_size         = "0"
     },
   ]
 
   tags = {
-    Environment = "${var.environment}"
+    project     = "${var.project}"
+    environment = "${var.environment}"
   }
-}
-
-module "AS_Polisys" {
-  source                     = "AS_policys/"
-  autoscaling_group_name     = "${element(module.Cluster.workers_asg_names, 0)}"
-  policy_name                = "${var.project}-${var.environment}"
-  SimpleScaling_policys      = "${var.SimpleScaling_policys}"
-  SimpleAlarmScaling_policys = "${var.SimpleAlarmScaling_policys}"
-  StepScaling_policys        = "${var.StepScaling_policys}"
-  TargetTracking_policys     = "${var.TargetTracking_policys}"
 }
