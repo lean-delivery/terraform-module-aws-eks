@@ -8,58 +8,16 @@ variable "environment" {
   type        = "string"
 }
 
+variable "eks_ami" {
+  description = "AMI for EKS workers"
+  type        = "string"
+  default     = ""
+}
+
 variable "root_domain" {
   description = "Root domain in which custom DNS record for ALB would be created"
 }
 
-variable "alternative_domains_count" {
-  description = "Alternative domains count for ACM certificate"
-  default     = "0"
-}
-
-variable "alternative_domains" {
-  description = "Alternative domains for ACM certificate dns records with ',' as delimiter"
-  default     = []
-}
-
-variable "alb_route53_record" {
-  description = "Alias Route53 DNS record name for ALB"
-}
-
-variable "alb_ingress_rules" {
-  description = "List of maps that contains ingress rules for ALB security group"
-  type        = "list"
-
-  default = [
-    {
-      from_port   = 80
-      to_port     = 80
-      protocol    = "tcp"
-      cidr_blocks = "0.0.0.0/0"
-    },
-    {
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = "0.0.0.0/0"
-    },
-  ]
-}
-
-variable "cidr_whitelist" {
-  description = "List of maps that contains IP CIDR with protocol type. Example provided in module examples"
-  default     = []
-}
-
-variable "enable_waf" {
-  description = "Set true to enable Web Application Firewall for whitelisting"
-  default     = false
-}
-
-variable "create_acm_certificate" {
-  description = "Set true for ACM certificate for ALB creation"
-  default     = true
-}
 
 variable "target_group_port" {
   description = "ALB targer group port. This value will be used as NodePort for Nginx Ingress controller service."
@@ -154,20 +112,24 @@ variable "spot_configuration" {
 
   default = [
     {
-      instance_type           = "m4.large"
-      spot_price              = "0.05"
-      asg_max_size            = "4"
-      asg_min_size            = "1"
-      asg_desired_capacity    = "1"
-      additional_kubelet_args = ""
+      instance_type              = "m4.large"
+      additional_instance_type_1 = "t3.large"
+      additional_instance_type_2 = "m5.large"
+      spot_price                 = "0.05"
+      asg_max_size               = "4"
+      asg_min_size               = "1"
+      asg_desired_capacity       = "1"
+      additional_kubelet_args    = ""
     },
     {
-      instance_type           = "m4.xlarge"
-      spot_price              = "0.08"
-      asg_max_size            = "4"
-      asg_min_size            = "0"
-      asg_desired_capacity    = "0"
-      additional_kubelet_args = ""
+      instance_type              = "m4.xlarge"
+      additional_instance_type_1 = "t3.xlarge"
+      additional_instance_type_2 = "m5.xlarge"
+      spot_price                 = "0.08"
+      asg_max_size               = "4"
+      asg_min_size               = "0"
+      asg_desired_capacity       = "0"
+      additional_kubelet_args    = ""
     },
   ]
 }
@@ -204,8 +166,26 @@ variable "service_on_demand_configuration" {
 
 #########################DEPLOYMENTS FOR EKS CLUSTER#########################
 
-variable "deploy_ingress_controller" {
+variable "deploy_nginx_ingress" {
   description = "Set true for nginx ingress controller installation (https://github.com/kubernetes/ingress-nginx#nginx-ingress-controller)"
+  type        = "string"
+  default     = "true"
+}
+
+variable "deploy_aws_ingress" {
+  description = "Set true for AWS ALB ingress controller installation"
+  type        = "string"
+  default     = "false"
+}
+
+variable "enable_ebs_policy" {
+  description = "Set true to enable EBS support for PVC"
+  type        = "string"
+  default     = "true"
+}
+
+variable "enable_efs_policy" {
+  description = "Set true to enable EFS support for PVC"
   type        = "string"
   default     = "true"
 }

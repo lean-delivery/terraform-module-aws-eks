@@ -76,12 +76,7 @@ module "eks_test" {
   ]
 
   worker_nodes_ssh_key      = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDmYWeU1Hm+KfNmnOhB1OVh58KVcetUp6URTPB6fEOmIoNpXXpwFNeotjPoyFwwNc6KJ3LtDOo/Gx9SBkx9sSrHZcJVrKXRF/h4fe4nWeuoz0l3e8Toq+UajIXPjtv+mXkUX5LeyWKwInGc9U3BHXhzV8BYz9i1UqPDDvNsmep5gdRukI327Rh1G+kAYuhivvxbrzsIQrLUMjHqTiL25yILHZJ/eCJvcqLBXtxkPJThytVC1WUZ4vKQ5g8Ley6CtEa/7HolH6RlGduHswzqcdjrSMNxXPoSLF0j4cOeRy7MQA3TU4cLBgcmrwGgE5/IjBy3/3e15D3jtu8jX0r+tUR3 user@example.com"
-  enable_waf                = true
-  create_acm_certificate    = true
   root_domain               = "eks.example.com"
-  alb_route53_record        = "eks-test.eks.example.com"
-  alternative_domains       = ["*.eks.nrw-nonprod.brb-labs.com"]
-  alternative_domains_count = 1
   target_group_port         = "30081"
 
   cidr_whitelist = [
@@ -95,7 +90,7 @@ module "eks_test" {
     },
   ]
 
-  deploy_ingress_controller     = true
+  deploy_nginx_ingress     = true
   deploy_external_dns           = true
   enable_container_logs         = true
   container_logs_retention_days = "5"

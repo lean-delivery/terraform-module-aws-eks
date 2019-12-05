@@ -127,25 +127,10 @@ module "eks_test" {
     ]
 
   worker_nodes_ssh_key      = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDmYWeU1Hm+KfNmnOhB1OVh58KVcetUp6URTPB6fEOmIoNpXXpwFNeotjPoyFwwNc6KJ3LtDOo/Gx9SBkx9sSrHZcJVrKXRF/h4fe4nWeuoz0l3e8Toq+UajIXPjtv+mXkUX5LeyWKwInGc9U3BHXhzV8BYz9i1UqPDDvNsmep5gdRukI327Rh1G+kAYuhivvxbrzsIQrLUMjHqTiL25yILHZJ/eCJvcqLBXtxkPJThytVC1WUZ4vKQ5g8Ley6CtEa/7HolH6RlGduHswzqcdjrSMNxXPoSLF0j4cOeRy7MQA3TU4cLBgcmrwGgE5/IjBy3/3e15D3jtu8jX0r+tUR3 user@example.com"
-  enable_waf                = true
-  create_acm_certificate    = true
   root_domain               = "eks.example.com"
-  alb_route53_record        = "eks-test.eks.example.com"
-  alternative_domains       = ["*.eks.example.com"]
-  alternative_domains_count = 1
   target_group_port         = "30081"
-  cidr_whitelist = [
-    {
-      type  = "IPV4"
-      value = "194.0.0.0/29"
-    },
-    {
-      type  = "IPV4"
-      value = "213.0.0.0/24"
-    },
-    ]
 
-  deploy_ingress_controller       = true
+  deploy_nginx_ingress       = true
   deploy_external_dns             = true
   enable_container_logs           = true
   container_logs_retention_days   = "5"
@@ -172,7 +157,6 @@ module "eks_test" {
 | deploy\_ingress\_controller | Set true for [nginx ingress controller](https://github.com/kubernetes/ingress-nginx#nginx-ingress-controller) installation | string | `"true"` | no |
 | enable\_container\_logs | Set true to install [fluentd](https://github.com/helm/charts/tree/master/incubator/fluentd-cloudwatch#fluentd-cloudwatch) and store container logs in AWS CloudWatch log group | string | `"false"` | no |
 | enable\_monitoring | Set true for [prometheus-operator](https://github.com/helm/charts/tree/master/stable/prometheus-operator#prometheus-operator) and [grafana](https://github.com/helm/charts/tree/master/stable/grafana#grafana-helm-chart) deployment. Also storageClass will be created. | string | `"false"` | no |
-| enable\_waf | Set true to enable Web Application Firewall for whitelisting | string | `"false"` | no |
 | environment | Environment name is used to identify resources | string | n/a | yes |
 | local\_exec\_interpreter | Command to run for local-exec resources. Must be a shell-style interpreter. If you are on Windows Git Bash is a good choice. | list | `["/bin/sh", "-c"]` | no |
 | map\_accounts | Additional AWS account numbers to add to the aws-auth configmap. See [variables.tf](https://github.com/terraform-aws-modules/terraform-aws-eks/blob/v4.0.0/examples/eks_test_fixture/variables.tf) for example format. | list | `<list>` | no |
