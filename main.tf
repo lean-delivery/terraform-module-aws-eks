@@ -37,7 +37,7 @@ module "eks" {
   source                    = "github.com/terraform-aws-modules/terraform-aws-eks?ref=v4.0.0"
   cluster_name              = "${var.project}-${var.environment}"
   vpc_id                    = "${var.vpc_id}"
-  subnets                   = "${var.private_subnets}"
+  subnets                   = ["${var.private_subnets}", "${var.public_subnets}"]
   cluster_enabled_log_types = "${var.cluster_enabled_log_types}"
   cluster_version           = "${var.cluster_version}"
   local_exec_interpreter    = "${var.local_exec_interpreter}"

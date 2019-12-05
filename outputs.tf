@@ -68,61 +68,6 @@ output "worker_security_group_id" {
   value       = "${module.eks.worker_security_group_id}"
 }
 
-output "alb_arn" {
-  description = "ALB arn for access to EKS deployments webUI."
-  value       = "${aws_lb.alb.arn}"
-}
-
-output "alb_dns_name" {
-  description = "ALB dns name for access to EKS deployments webUI."
-  value       = "${aws_lb.alb.dns_name}"
-}
-
-output "alb_target_group_arn" {
-  description = "ALB target group arn."
-  value       = "${aws_lb_target_group.alb.arn}"
-}
-
-output "alb_target_group_name" {
-  description = "ALB target group name."
-  value       = "${aws_lb_target_group.alb.name}"
-}
-
-output "alb_security_group_arn" {
-  description = "ALB security group arn."
-  value       = "${aws_security_group.alb-security-group.arn}"
-}
-
-output "alb_security_group_id" {
-  description = "ALB security group id."
-  value       = "${aws_security_group.alb-security-group.id}"
-}
-
-output "alb_security_group_name" {
-  description = "ALB security group name."
-  value       = "${aws_security_group.alb-security-group.name}"
-}
-
-output "alb_https_listener_arn" {
-  description = "ALB https listener arn."
-  value       = "${element(concat(aws_lb_listener.https.*.arn, list("")), 0)}"
-}
-
-output "alb_http_listener_arn" {
-  description = "ALB http listener arn."
-  value       = "${element(concat(aws_lb_listener.http.*.arn, list("")), 0)}"
-}
-
-output "acm_certificate_arn" {
-  description = "ACM certificate arn for ALB."
-  value       = "${module.acm-cert.certificate_arn}"
-}
-
-output "acm_certificate_domain" {
-  description = "ACM certificate domain for ALB."
-  value       = "${module.acm-cert.certificate_domain}"
-}
-
 output "iam_instance_profile_name" {
   description = "IAM instance profile name for EKS worker nodes."
   value       = "${aws_iam_instance_profile.worker-instance-profile.name}"
@@ -133,9 +78,9 @@ output "ssh_key_name" {
   value       = ["${aws_key_pair.worker_ssh_key_pair.*.key_name}"]
 }
 
-output "launch_configuration_spot_asg_names" {
+output "aws_launch_template_spot_asg_names" {
   description = "Launch configurations names for EKS spot worker nodes."
-  value       = ["${aws_launch_configuration.spot-asg.*.name}"]
+  value       = ["${aws_launch_template.spot-asg.*.name}"]
 }
 
 output "spot_asg_names" {

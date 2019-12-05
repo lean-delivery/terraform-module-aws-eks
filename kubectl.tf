@@ -70,12 +70,14 @@ data "template_file" "ingress_controller_service" {
 }
 
 resource "local_file" "ingress_controller_service" {
+  count = "${ var.deploy_nginx_ingress ? 1 : 0 }"
+
   content  = "${data.template_file.ingress_controller_service.rendered}"
   filename = "${path.module}/manifests/nginx-ingress/3-nginx-ingress-service.yaml"
 }
 
-resource "null_resource" "deploy_ingress_controller" {
-  count      = "${ var.deploy_ingress_controller ? 1 : 0 }"
+resource "null_resource" "deploy_nginx_ingress" {
+  count      = "${ var.deploy_nginx_ingress ? 1 : 0 }"
   depends_on = ["null_resource.check_api", "local_file.ingress_controller_service"]
 
   provisioner "local-exec" {
@@ -103,6 +105,8 @@ data "template_file" "external_dns_manifest" {
 }
 
 resource "local_file" "external_dns_manifest" {
+  count = "${ var.deploy_external_dns ? 1 : 0 }"
+
   content  = "${data.template_file.external_dns_manifest.rendered}"
   filename = "${path.module}/manifests/external_dns.yaml"
 }
@@ -303,6 +307,39 @@ sleep 5;
 kubectl apply -f manifests/monitoring/grafana_pvc.yaml --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5; \
 helm install --namespace monitoring --name grafana manifests/monitoring/grafana-helm/ --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
+sleep 5;
+EOS
+
+    interpreter = ["${var.local_exec_interpreter}"]
+  }
+}
+
+data "template_file" "aws_alb_ingress_config" {
+  template = "${file("${path.module}/manifests_templates/aws-alb-ingress/alb-ingress-controller.tpl")}"
+
+  vars = {
+    cluster_name = "${var.project}-${var.environment}"
+    region       = "${data.aws_region.current.name}"
+    vpc_id       = "${var.vpc_id}"
+  }
+}
+
+resource "local_file" "aws_alb_ingress_config" {
+  content  = "${data.template_file.aws_alb_ingress_config.rendered}"
+  filename = "${path.module}/manifests/aws-alb-ingress/alb-ingress-controller.yaml"
+}
+
+resource "null_resource" "deploy_aws_alb_ingress" {
+  count      = "${ var.deploy_aws_ingress ? 1 : 0 }"
+  depends_on = ["null_resource.check_api", "local_file.aws_alb_ingress_config"]
+
+  provisioner "local-exec" {
+    working_dir = "${path.module}"
+
+    command = <<EOS
+kubectl apply -f manifests/aws-alb-ingress/rbac-role.yaml --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
+sleep 5; \
+kubectl apply -f manifests/aws-alb-ingress/alb-ingress-controller.yaml --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5;
 EOS
 
