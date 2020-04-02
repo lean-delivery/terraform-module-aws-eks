@@ -131,6 +131,7 @@ EOS
   }
 }
 
+##### Template, save to S3 and deploy cluster autoscaler ##### 
 data "template_file" "cluster_autoscaler_config" {
   template = "${file("${path.module}/manifests_templates/cluster-autoscaler/kubernetes-autoscaler.tpl")}"
 
@@ -210,6 +211,7 @@ EOS
   }
 }
 
+##### Template, save to S3 and deploy logging, monitoring, etc... ##### 
 data "template_file" "fluentd_config" {
   template = "${file("${path.module}/manifests_templates/fluentd_values.tpl")}"
 
