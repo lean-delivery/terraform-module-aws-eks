@@ -8,6 +8,11 @@ variable "environment" {
   type        = "string"
 }
 
+variable "s3_bucket_name" {
+  description = "Name of the bucket to store kubernetes manifests"
+  type = "string"
+}
+
 variable "root_domain" {
   description = "Root domain in which custom DNS record for ALB would be created"
 }
