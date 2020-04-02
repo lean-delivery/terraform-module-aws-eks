@@ -2,6 +2,12 @@ provider "aws" {
   region = "us-east-1"
 }
 
+# provider for S3 bucket. when the bucket is stored in other region
+provider "aws" {
+  region = "eu-central-1"
+  alias  = "tfstate"
+}
+
 module "core" {
   source = "github.com/lean-delivery/tf-module-aws-core?ref=v0.2"
 
@@ -20,6 +26,8 @@ module "eks_test" {
 
   project     = "eks"
   environment = "test"
+
+  s3_bucket_name = "aws-eks-s3-bucket"
 
   cluster_version           = "1.14"
   cluster_enabled_log_types = ["api"]
