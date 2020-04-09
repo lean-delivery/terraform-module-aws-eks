@@ -334,16 +334,4 @@ EOS
   }
 }
 
-resource "null_resource" "copy_manifests" {
-  depends_on = ["null_resource.deploy_cluster_autoscaler", "aws_s3_bucket_object.grafana_config", "aws_s3_bucket_object.prometheus_operator_config", "aws_s3_bucket_object.grafana_pvc", "aws_s3_bucket_object.storage_class", "aws_s3_bucket_object.fluentd_config", "aws_s3_bucket_object.external_dns_manifest", "aws_s3_bucket_object.ingress_controller_service"]
-
-  provisioner "local-exec" {
-    working_dir = "${path.module}"
-
-    command = <<EOS
-cp -r ${path.module}/manifests ${path.root}/manifests_rendered
-EOS
-
-    interpreter = ["${var.local_exec_interpreter}"]
-  }
 }
