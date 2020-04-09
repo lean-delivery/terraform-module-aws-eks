@@ -61,6 +61,8 @@ EOS
   }
 }
 
+
+##### Template, save to S3 and deploy ingress_controller ##### 
 data "template_file" "ingress_controller_service" {
   template = "${file("${path.module}/manifests_templates/nginx-ingress-service.tpl")}"
 
@@ -69,14 +71,17 @@ data "template_file" "ingress_controller_service" {
   }
 }
 
-resource "local_file" "ingress_controller_service" {
+resource "aws_s3_bucket_object" "ingress_controller_service" {
+  provider = "aws.tfstate"
+  bucket = "${var.s3_bucket_name}"
+  key    = "${var.project}/${var.environment}/manifests/3-nginx-ingress-service.yaml"
   content  = "${data.template_file.ingress_controller_service.rendered}"
-  filename = "${path.module}/manifests/nginx-ingress/3-nginx-ingress-service.yaml"
 }
 
 resource "null_resource" "deploy_ingress_controller" {
   count      = "${ var.deploy_ingress_controller ? 1 : 0 }"
-  depends_on = ["null_resource.check_api", "local_file.ingress_controller_service"]
+
+  depends_on = ["null_resource.check_api", "aws_s3_bucket_object.ingress_controller_service"]
 
   provisioner "local-exec" {
     working_dir = "${path.module}"
@@ -84,7 +89,7 @@ resource "null_resource" "deploy_ingress_controller" {
     command = <<EOS
 kubectl apply -f manifests/nginx-ingress/1-namespace.yaml --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5; \
-kubectl apply -f manifests/nginx-ingress/2-nginx-ingress-rbac-deployment.yaml -f manifests/nginx-ingress/3-nginx-ingress-service.yaml -f manifests/nginx-ingress/4-default-http-backend.yaml --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
+kubectl apply -f manifests/nginx-ingress/2-nginx-ingress-rbac-deployment.yaml -f ${data.template_file.ingress_controller_service.rendered} -f manifests/nginx-ingress/4-default-http-backend.yaml --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5;
 EOS
 
@@ -92,6 +97,8 @@ EOS
   }
 }
 
+
+##### Template, save to S3 and deploy external-dns ##### 
 data "template_file" "external_dns_manifest" {
   template = "${file("${path.module}/manifests_templates/external-dns.tpl")}"
 
@@ -101,21 +108,22 @@ data "template_file" "external_dns_manifest" {
     environment = "${var.environment}"
   }
 }
-
-resource "local_file" "external_dns_manifest" {
-  content  = "${data.template_file.external_dns_manifest.rendered}"
-  filename = "${path.module}/manifests/external_dns.yaml"
+resource "aws_s3_bucket_object" "external_dns_manifest" {
+  provider = "aws.tfstate"
+  bucket = "${var.s3_bucket_name}"
+  key    = "${var.project}/${var.environment}/manifests/external_dns.yaml"
+  content  = "${data.template_file.ingress_controller_service.rendered}"
 }
 
 resource "null_resource" "deploy_external_dns" {
   count      = "${ var.deploy_external_dns ? 1 : 0 }"
-  depends_on = ["null_resource.check_api", "local_file.external_dns_manifest"]
+  depends_on = ["null_resource.check_api", "aws_s3_bucket_object.external_dns_manifest"]
 
   provisioner "local-exec" {
     working_dir = "${path.module}"
 
     command = <<EOS
-kubectl apply -f manifests/external_dns.yaml --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
+kubectl apply -f ${data.template_file.external_dns_manifest.rendered} --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5;
 EOS
 
@@ -123,6 +131,7 @@ EOS
   }
 }
 
+##### Template, save to S3 and deploy cluster autoscaler ##### 
 data "template_file" "cluster_autoscaler_config" {
   template = "${file("${path.module}/manifests_templates/cluster-autoscaler/kubernetes-autoscaler.tpl")}"
 
@@ -132,9 +141,11 @@ data "template_file" "cluster_autoscaler_config" {
   }
 }
 
-resource "local_file" "cluster_autoscaler_config" {
+resource "aws_s3_bucket_object" "cluster_autoscaler_config" {
+  provider = "aws.tfstate"
+  bucket = "${var.s3_bucket_name}"
+  key    = "${var.project}/${var.environment}/manifests/cluster-autoscaler/kubernetes-autoscaler.yaml"
   content  = "${data.template_file.cluster_autoscaler_config.rendered}"
-  filename = "${path.module}/manifests/cluster-autoscaler/kubernetes-autoscaler.yaml"
 }
 
 data "template_file" "cluster_autoscaler_priority_configmap" {
@@ -146,21 +157,23 @@ data "template_file" "cluster_autoscaler_priority_configmap" {
   }
 }
 
-resource "local_file" "cluster_autoscaler_priority_configmap" {
+resource "aws_s3_bucket_object" "cluster_autoscaler_priority_configmap" {
+  provider = "aws.tfstate"
+  bucket = "${var.s3_bucket_name}"
+  key    = "${var.project}/${var.environment}/manifests/cluster-autoscaler/autoscaler-priority.yaml"
   content  = "${data.template_file.cluster_autoscaler_priority_configmap.rendered}"
-  filename = "${path.module}/manifests/cluster-autoscaler/autoscaler-priority.yaml"
 }
 
 resource "null_resource" "deploy_cluster_autoscaler" {
-  depends_on = ["local_file.cluster_autoscaler_config", "null_resource.priority_class", "local_file.cluster_autoscaler_priority_configmap"]
+  depends_on = ["aws_s3_bucket_object.cluster_autoscaler_config", "null_resource.priority_class", "aws_s3_bucket_object.cluster_autoscaler_priority_configmap"]
 
   provisioner "local-exec" {
     working_dir = "${path.module}"
 
     command = <<EOS
-kubectl apply -f manifests/cluster-autoscaler/autoscaler-priority.yaml --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
+kubectl apply -f ${data.template_file.cluster_autoscaler_priority_configmap.rendered} --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5; \
-kubectl apply -f manifests/cluster-autoscaler/kubernetes-autoscaler.yaml --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
+kubectl apply -f ${data.template_file.cluster_autoscaler_config.rendered} --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5;
 EOS
 
@@ -198,6 +211,7 @@ EOS
   }
 }
 
+##### Template, save to S3 and deploy logging, monitoring, etc... ##### 
 data "template_file" "fluentd_config" {
   template = "${file("${path.module}/manifests_templates/fluentd_values.tpl")}"
 
@@ -209,20 +223,22 @@ data "template_file" "fluentd_config" {
   }
 }
 
-resource "local_file" "fluentd_config" {
+resource "aws_s3_bucket_object" "fluentd_config" {
+  provider = "aws.tfstate"
+  bucket = "${var.s3_bucket_name}"
+  key    = "${var.project}/${var.environment}/manifests/logs_fluend_cloudwatch/values.yaml"
   content  = "${data.template_file.fluentd_config.rendered}"
-  filename = "${path.module}/manifests/logs_fluend_cloudwatch/values.yaml"
 }
 
 resource "null_resource" "deploy_fluentd" {
   count      = "${ var.enable_container_logs ? 1 : 0 }"
-  depends_on = ["null_resource.install_tiller", "local_file.fluentd_config"]
+  depends_on = ["null_resource.install_tiller", "aws_s3_bucket_object.fluentd_config"]
 
   provisioner "local-exec" {
     working_dir = "${path.module}"
 
     command = <<EOS
-helm install --namespace logs --name fluentd ${path.module}/manifests/logs_fluend_cloudwatch/ --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
+helm install --namespace logs --name fluentd ${path.module}/manifests/logs_fluend_cloudwatch/ --values ${data.template_file.fluentd_config.rendered} --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 15;
 EOS
 
@@ -266,43 +282,51 @@ data "template_file" "grafana_values" {
   }
 }
 
-resource "local_file" "storage_class" {
+resource "aws_s3_bucket_object" "storage_class" {
+  provider = "aws.tfstate"
+  bucket = "${var.s3_bucket_name}"
+  key    = "${var.project}/${var.environment}/manifests/monitoring/storageClass.yaml"
   content  = "${data.template_file.storage_class.rendered}"
-  filename = "${path.module}/manifests/monitoring/storageClass.yaml"
 }
 
-resource "local_file" "grafana_pvc" {
+resource "aws_s3_bucket_object" "grafana_pvc" {
+  provider = "aws.tfstate"
+  bucket = "${var.s3_bucket_name}"
+  key    = "${var.project}/${var.environment}/manifests/monitoring/grafana_pvc.yaml"
   content  = "${data.template_file.grafana_pvc.rendered}"
-  filename = "${path.module}/manifests/monitoring/grafana_pvc.yaml"
 }
 
-resource "local_file" "prometheus_operator_config" {
+resource "aws_s3_bucket_object" "prometheus_operator_config" {
+  provider = "aws.tfstate"
+  bucket = "${var.s3_bucket_name}"
+  key    = "${var.project}/${var.environment}/manifests/monitoring/prometheus-operator-helm/values.yaml"
   content  = "${data.template_file.prometheus_operator_values.rendered}"
-  filename = "${path.module}/manifests/monitoring/prometheus-operator-helm/values.yaml"
 }
 
-resource "local_file" "grafana_config" {
+resource "aws_s3_bucket_object" "grafana_config" {
+  provider = "aws.tfstate"
+  bucket = "${var.s3_bucket_name}"
+  key    = "${var.project}/${var.environment}/manifests/monitoring/grafana-helm/values.yaml"
   content  = "${data.template_file.grafana_values.rendered}"
-  filename = "${path.module}/manifests/monitoring/grafana-helm/values.yaml"
 }
 
 resource "null_resource" "deploy_monitoring" {
   count      = "${ var.enable_monitoring ? 1 : 0 }"
-  depends_on = ["null_resource.install_tiller", "local_file.grafana_config", "local_file.prometheus_operator_config", "local_file.grafana_pvc", "local_file.storage_class"]
+  depends_on = ["null_resource.install_tiller", "aws_s3_bucket_object.grafana_config", "aws_s3_bucket_object.prometheus_operator_config", "aws_s3_bucket_object.grafana_pvc", "aws_s3_bucket_object.storage_class"]
 
   provisioner "local-exec" {
     working_dir = "${path.module}"
 
     command = <<EOS
-kubectl apply -f manifests/monitoring/storageClass.yaml --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
+kubectl apply -f ${data.template_file.storage_class.rendered} --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5; \
-helm install --namespace monitoring --name prometheus-operator manifests/monitoring/prometheus-operator-helm/ --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
+helm install --namespace monitoring --name prometheus-operator manifests/monitoring/prometheus-operator-helm/ --values ${data.template_file.prometheus_operator_values.rendered} --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5; \
 helm install --namespace kube-system --name termination-handler-exporter manifests/spot-termination-exporter/ --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5;
-kubectl apply -f manifests/monitoring/grafana_pvc.yaml --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
+kubectl apply -f ${data.template_file.grafana_pvc.rendered} --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5; \
-helm install --namespace monitoring --name grafana manifests/monitoring/grafana-helm/ --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
+helm install --namespace monitoring --name grafana manifests/monitoring/grafana-helm/ --values ${data.template_file.grafana_values.rendered} --kubeconfig ${path.cwd}/${module.eks.kubeconfig_filename}; \
 sleep 5;
 EOS
 
@@ -310,16 +334,3 @@ EOS
   }
 }
 
-resource "null_resource" "copy_manifests" {
-  depends_on = ["null_resource.deploy_cluster_autoscaler", "local_file.grafana_config", "local_file.prometheus_operator_config", "local_file.grafana_pvc", "local_file.storage_class", "local_file.fluentd_config", "local_file.external_dns_manifest", "local_file.ingress_controller_service"]
-
-  provisioner "local-exec" {
-    working_dir = "${path.module}"
-
-    command = <<EOS
-cp -r ${path.module}/manifests ${path.root}/manifests_rendered
-EOS
-
-    interpreter = ["${var.local_exec_interpreter}"]
-  }
-}

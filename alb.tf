@@ -73,7 +73,7 @@ resource "aws_lb" "alb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = ["${aws_security_group.alb-security-group.id}", "${module.eks.worker_security_group_id}"]
-  subnets            = "${var.public_subnets}"
+  subnets            = ["${var.public_subnets}",]
 
   enable_deletion_protection = false
 
